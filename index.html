@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Name Trainer</title>
+<style>
+.sp-app{--ink:#1f2933;--muted:#66727f;--line:#d9dee4;--bg:#f4f5f7;--panel:#fff;--accent:#2557d6;--accent-soft:#e8eefc;--wood:#ead9bb;--wood-b:#c4a676;--lab:#c9d1d9;--lab-b:#6b7785;--pc:#dfe6ee;--danger:#c62828;
+  font:14px/1.35 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--ink);background:var(--bg);min-height:100vh;display:flex;flex-direction:column;box-sizing:border-box}
+.sp-app *,.sp-app *::before,.sp-app *::after{box-sizing:border-box}
+.sp-app button{font:inherit;border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:8px;padding:6px 11px;cursor:pointer;white-space:nowrap}
+.sp-app button:hover{border-color:#aab4bf}
+.sp-app button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.sp-app button.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+.sp-app button:disabled{opacity:.45;cursor:default}
+.sp-app input,.sp-app select{font:inherit;border:1px solid var(--line);border-radius:7px;padding:5px 7px;background:#fff;color:var(--ink)}
+.sp-app input[type=number]{width:58px}
+
+.sp-foot{padding:10px 16px;border-top:1px solid var(--line);background:var(--panel);color:var(--muted);font-size:11.5px;text-align:center;line-height:1.5}
+.sp-foot b{color:var(--ink);font-weight:600}
+.nl-head{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;padding:12px 16px;background:var(--panel);border-bottom:1px solid var(--line)}
+.nl-head h1{font-size:17px;margin:0;font-weight:650}
+.nl-head .cls{color:var(--muted);font-size:13.5px}
+.nl-head .sp{flex:1}
+.nl-tabs{display:flex;gap:4px;padding:8px 16px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap;align-items:center}
+.nl-tabs button{border-color:transparent;background:transparent;font-weight:550;color:var(--muted)}
+.nl-tabs button:disabled{opacity:.35}
+.kview{width:min(900px,100%)}
+.kview h2{font-size:20px;margin:0 0 4px}
+.kview p{color:var(--muted);margin:0 0 16px}
+.kview .ktile{min-width:180px;padding:10px 28px 10px 10px}
+.kview .kmos{width:54px;height:54px}
+.kview .row{margin-top:20px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.nl-tabs button.on{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.nl-tabs .sp{flex:1}
+.nl-tabs label{font-size:12.5px;color:var(--muted);display:flex;gap:5px;align-items:center}
+.sp-classes{display:flex;gap:12px;align-items:center;padding:10px 16px;background:#fafbfc;border-bottom:1px solid var(--line);overflow-x:auto}
+.sp-classes .klbl{color:var(--muted);font-size:12.5px;font-weight:600;white-space:nowrap;display:flex;flex-direction:column}
+.sp-classes .klbl small{font-weight:400;font-size:11px}
+.sp-classes .ktiles{flex-wrap:nowrap;padding-top:6px}
+.nl-view{flex:1;padding:22px 16px 40px;display:flex;flex-direction:column;align-items:center}
+.welcome{max-width:560px;text-align:center;margin-top:40px}
+.welcome h2{font-size:22px;margin:0 0 10px}
+.welcome p{color:var(--muted);margin:0 0 20px}
+.welcome .modes{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:22px 0;text-align:left}
+.welcome .modes div{background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--muted)}
+.welcome .modes b{display:block;color:var(--ink);font-size:14px;margin-bottom:2px}
+.big-btn{font-size:16px !important;padding:11px 20px !important}
+.prog{width:min(520px,100%);display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);margin-bottom:16px}
+.prog .bar{flex:1;height:8px;background:#e3e7ec;border-radius:9px;overflow:hidden}
+.prog .bar i{display:block;height:100%;background:var(--accent);border-radius:9px;transition:width .3s}
+/* flashcard */
+.flip{width:min(340px,86vw);height:min(440px,62vh);perspective:1200px;cursor:pointer;margin-bottom:18px}
+.flip .inner{position:relative;width:100%;height:100%;transition:transform .45s;transform-style:preserve-3d}
+.flip.on .inner{transform:rotateY(180deg)}
+.flip .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:16px;background:#fff;box-shadow:0 4px 18px rgba(0,0,0,.12);border:1px solid var(--line);overflow:hidden;display:flex;flex-direction:column}
+.flip .back{transform:rotateY(180deg);align-items:center;justify-content:center;gap:10px;padding:20px;text-align:center}
+.flip .front img{width:100%;height:100%;object-fit:cover;object-position:50% 20%}
+.flip .front .hint{position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:12px;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.flip .back img{width:120px;height:150px;object-fit:cover;object-position:50% 20%;border-radius:10px}
+.bigname{font-size:34px;font-weight:700;letter-spacing:-.01em}
+.subname{color:var(--muted);font-size:15px}
+.ans{display:flex;gap:12px}
+.ans button{min-width:150px;font-size:15px;padding:10px 16px;font-weight:600}
+.btn-no{color:#b42318 !important;border-color:#f2b8b5 !important;background:#fff5f4 !important}
+.btn-yes{color:#067647 !important;border-color:#a6e3c3 !important;background:#f1fbf5 !important}
+.keys{color:var(--muted);font-size:12px;margin-top:12px}
+.ph-q{width:min(280px,70vw);height:min(340px,44vh);border-radius:16px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,.12);margin-bottom:18px;background:#e6eaef}
+.ph-q img{width:100%;height:100%;object-fit:cover;object-position:50% 20%}
+.initials{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:48px;font-weight:700;color:#7b8794;background:#e6eaef}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:min(520px,100%)}
+.opts button{padding:14px 10px;font-size:16px;font-weight:600;text-align:center;white-space:normal}
+.opts button .k{color:var(--muted);font-weight:500;font-size:12px;margin-right:6px}
+.opts button.ok{background:#e7f8ee;border-color:#3fb56f;color:#067647}
+.opts button.bad{background:#fdecea;border-color:#e57368;color:#b42318}
+.opts.ph button{padding:6px;height:min(200px,26vh)}
+.opts.ph button img{width:100%;height:100%;object-fit:cover;object-position:50% 20%;border-radius:8px;display:block}
+.qname{font-size:30px;font-weight:700;margin:10px 0 20px;text-align:center}
+.fb{min-height:26px;margin-top:12px;font-weight:600;font-size:15px}
+.fb.ok{color:#067647}.fb.bad{color:#b42318}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;margin-bottom:16px;background:#fff}
+.seg button{border:0;border-radius:0;padding:6px 12px;font-size:13px}
+.seg button.on{background:var(--accent-soft);color:var(--accent)}
+/* memory */
+.mem-top{display:flex;gap:16px;align-items:center;flex-wrap:wrap;justify-content:center;margin-bottom:14px;font-size:13.5px;color:var(--muted)}
+.mem{display:grid;gap:10px;width:min(1000px,100%);grid-template-columns:repeat(auto-fill,minmax(112px,1fr))}
+.mc{aspect-ratio:3/4;perspective:800px;cursor:pointer}
+.mc .inner{position:relative;width:100%;height:100%;transition:transform .35s;transform-style:preserve-3d}
+.mc.open .inner,.mc.done .inner{transform:rotateY(180deg)}
+.mc .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;border:1px solid var(--line)}
+.mc .cover{background:repeating-linear-gradient(45deg,#2557d6 0 10px,#3a69e0 10px 20px);color:#fff;font-size:30px;font-weight:700}
+.mc .val{transform:rotateY(180deg);background:#fff;font-weight:650;font-size:15px;text-align:center;padding:6px;word-break:break-word}
+.mc .val img{width:100%;height:100%;object-fit:cover;object-position:50% 20%}
+.mc.done .val{outline:3px solid #3fb56f;outline-offset:-3px}
+.mc.done{opacity:.75;cursor:default}
+/* write */
+.wr-in{display:flex;gap:8px;width:min(420px,100%)}
+.wr-in input{flex:1;font-size:18px;padding:10px 12px}
+.hintline{min-height:30px;margin-top:12px;font-size:22px;font-weight:650;letter-spacing:.12em;color:#b54708;font-family:ui-monospace,Menlo,monospace}
+.ans button:disabled{opacity:.4}
+.done-box{text-align:center;margin-top:30px;max-width:460px}
+.done-box h2{margin:0 0 6px;font-size:24px}
+.done-box p{color:var(--muted);margin:0 0 18px}
+.done-box .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+/* list */
+.lst{display:grid;gap:10px;width:min(1000px,100%);grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.li{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;position:relative}
+.li img,.li .initials{width:100%;height:150px;object-fit:cover;object-position:50% 20%;display:block}
+.li .initials{font-size:34px}
+.li input{width:calc(100% - 12px);margin:6px;font-size:13px}
+.li .acc{font-size:11.5px;color:var(--muted);padding:0 8px 7px}
+.li .acc b{font-weight:600}
+.li .x{position:absolute;top:5px;right:5px;width:24px;height:24px;padding:0;border-radius:50%;background:rgba(255,255,255,.9)}
+.lst-top{display:flex;gap:10px;align-items:center;justify-content:space-between;width:min(1000px,100%);margin-bottom:12px;flex-wrap:wrap}
+/* class tiles */
+.ktiles{display:flex;gap:8px;flex-wrap:wrap;align-items:stretch}
+.ktile{position:relative;display:flex;align-items:center;gap:8px;padding:6px 26px 6px 6px;border:1.5px solid var(--line);border-radius:10px;background:#fff;cursor:pointer;min-width:140px;user-select:none}
+.ktile:hover{border-color:#aab4bf}
+.ktile.active,.ktile.sel{border-color:var(--accent);background:var(--accent-soft)}
+.kmos{width:40px;height:40px;border-radius:7px;overflow:hidden;display:grid;grid-template-columns:1fr 1fr;background:#e6eaef;flex:none}
+.kmos img{width:100%;height:100%;object-fit:cover;object-position:50% 20%;display:block}
+.kmos span{grid-column:1/3;display:flex;align-items:center;justify-content:center;font-size:20px}
+.ktxt{display:flex;flex-direction:column;line-height:1.25}
+.ktxt b{font-size:13.5px;font-weight:650}.ktxt small{color:var(--muted);font-size:11.5px}
+.sp-app .kdel{position:absolute;top:3px;right:3px;min-width:20px;height:20px;padding:0 4px;border-radius:10px;font-size:12px;line-height:1;opacity:0;border-color:transparent;background:transparent;color:var(--muted)}
+.ktile:hover .kdel,.sp-app .kdel.armed{opacity:1}
+.sp-app .kdel.armed{background:#c62828;color:#fff;padding:0 7px}
+.kchk{position:absolute;top:-7px;left:-7px;width:20px;height:20px;border-radius:50%;border:1.5px solid #b9c2cc;background:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;color:#fff}
+.ktile.sel .kchk{background:var(--accent);border-color:var(--accent)}
+.ktile.knew{border-style:dashed;justify-content:center;color:var(--accent);font-weight:600;padding:6px 14px;min-width:0}
+/* modal */
+.sp-modal{position:fixed;inset:0;background:rgba(20,26,33,.45);display:none;align-items:center;justify-content:center;z-index:1000;padding:16px}
+.sp-modal.show{display:flex}
+.sp-dlg{background:#fff;border-radius:12px;box-shadow:0 18px 50px rgba(0,0,0,.3);width:min(1100px,100%);max-height:calc(100vh - 32px);display:flex;flex-direction:column;overflow:hidden}
+.sp-dlg.small{width:min(420px,100%)}
+.sp-dlg header{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
+.sp-dlg header h3{margin:0;font-size:16px;flex:1}
+.sp-dlg .body{padding:14px 18px;overflow:auto;flex:1}
+.sp-dlg footer{padding:12px 18px;border-top:1px solid var(--line);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.sp-dlg footer .sp{flex:1}
+.tabs{display:flex;gap:4px}
+.imp-grid{display:grid;grid-template-columns:minmax(260px,380px) 1fr;gap:16px}
+.imp-grid.nopreview{grid-template-columns:1fr}
+.imp-grid.nopreview .imp-prev{display:none}
+.imp-prev canvas{width:100%;border:1px solid var(--line);border-radius:6px;background:#fff}
+.imp-set{display:grid;grid-template-columns:repeat(2,auto);gap:6px 10px;align-items:center;margin-bottom:10px;font-size:13px;justify-content:start}
+.imp-res{display:flex;flex-wrap:wrap;gap:10px;align-content:flex-start}
+.imp-c{width:104px;border:1px solid var(--line);border-radius:8px;padding:5px;position:relative;background:#fafbfc}
+.imp-c img{width:100%;height:110px;object-fit:cover;object-position:50% 20%;border-radius:5px;display:block;background:#e6eaef}
+.imp-c input{width:100%;margin-top:4px;font-size:11.5px;padding:3px 5px}
+.imp-c .x{position:absolute;top:2px;right:2px;width:22px;height:22px;padding:0;border-radius:50%;font-size:13px;line-height:1;background:rgba(255,255,255,.9)}
+.imp-msg{padding:10px 12px;background:#fff8e6;border:1px solid #f0dca8;border-radius:8px;margin-bottom:12px;font-size:13px}
+.drop{border:2px dashed #b9c2cc;border-radius:10px;padding:26px;text-align:center;color:var(--muted);background:#fafbfc}
+.drop.over{border-color:var(--accent);background:var(--accent-soft)}
+.sp-toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#1f2933;color:#fff;padding:9px 16px;border-radius:9px;font-size:13.5px;z-index:2000;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw}
+.sp-toast.show{opacity:1}
+.sp-busy{position:fixed;inset:0;background:rgba(255,255,255,.7);z-index:3000;display:none;align-items:center;justify-content:center;font-size:15px;font-weight:600}
+.sp-busy.show{display:flex}
+.frm{display:grid;gap:10px}
+.frm label{display:grid;gap:4px;font-size:13px;color:var(--muted)}
+.frm .ph-edit{display:flex;gap:12px;align-items:center}
+.frm .ph-edit .card{cursor:default}
+@media (max-width:820px){.imp-grid{grid-template-columns:1fr}}
+
+</style>
+</head>
+<body style="margin:0">
+<div class="sp-app" id="spApp">
+  <div class="nl-head">
+    <h1>Name Trainer</h1>
+    <span class="cls" id="clsInfo"></span>
+    <span class="sp"></span>
+    <button class="primary" id="bImport">Load class list (PDF)</button>
+  </div>
+  <div class="nl-tabs" id="tabs" style="display:none">
+    <button data-v="cards" class="on">Flashcards</button>
+    <button data-v="quiz">Quiz</button>
+    <button data-v="memory">Memory</button>
+    <button data-v="write">Typing</button>
+    <button data-v="list">Students</button>
+    <span class="sp"></span>
+    <label>Learn: <select id="nameMode"><option value="firstI">First L.</option><option value="first">First name</option><option value="full">First Last</option></select></label>
+  </div>
+  <div class="sp-classes" id="kbar" style="display:none"><span class="klbl">Classes <small>(tap = include)</small></span><div class="ktiles" id="ktiles"></div></div>
+  <div class="nl-view" id="view"></div>
+  <footer class="sp-foot"><b>© 2026 AxlKray · Switzerland</b> · No login, no ads, no tracking – completely free.<br>Names, photos and plans are stored only locally in this browser on this device. The PDF itself is not saved. Nothing is uploaded.</footer>
+  <!-- Import dialog -->
+  <div class="sp-modal" id="dlgImport">
+    <div class="sp-dlg">
+      <header><h3>Import class list</h3>
+        <div class="tabs" id="impTabs" style="display:none"><button data-mode="auto" class="on">Automatic</button><button data-mode="grid">Grid</button></div>
+      </header>
+      <div class="body">
+        <div id="impErr" class="imp-msg" style="display:none;background:#fdecea;border-color:#f3b4ae;color:#8a1c12"></div>
+        <div id="impDrop" class="drop">Drop a PDF here or <button id="bPick" class="primary">Choose file</button><br><small>The file is processed only in this browser – nothing is uploaded.</small><div id="exWrap" style="display:none;margin-top:14px">or <button id="bExample">Try with example class</button> <small>(fictional names, cartoon pictures)</small></div></div>
+        <div id="impWork" style="display:none">
+          <div id="impMsg" class="imp-msg" style="display:none"></div>
+          <div class="imp-grid" id="impGrid">
+            <div class="imp-prev" id="impPrev">
+              <div class="imp-set" id="gridSet">
+                <span>Rows</span><input type="number" id="gRows" min="1" max="20" value="5">
+                <span>Columns</span><input type="number" id="gCols" min="1" max="20" value="6">
+                <span>Margin top %</span><input type="number" id="gMt" min="0" max="60" value="8">
+                <span>Margin bottom %</span><input type="number" id="gMb" min="0" max="60" value="5">
+                <span>Margin left %</span><input type="number" id="gMl" min="0" max="40" value="5">
+                <span>Margin right %</span><input type="number" id="gMr" min="0" max="40" value="5">
+                <span>Name area %</span><input type="number" id="gNz" min="0" max="70" value="22">
+              </div>
+              <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px"><button id="pPrev">‹</button><span id="pLbl"></span><button id="pNext">›</button></div>
+              <canvas id="prevCanvas"></canvas>
+              <div style="font-size:12px;color:var(--muted);margin-top:4px">Blue = photo, orange = name. The setting applies to all pages.</div>
+            </div>
+            <div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px;font-size:13px">
+                <label>Name format <select id="nameFmt"><option value="swap">First Last</option><option value="asis">as in the PDF</option></select></label>
+                <label><input type="checkbox" id="dblName" checked> only 1st first name + last name (no middle names; first part of hyphenated last names)</label>
+                <label><input type="checkbox" id="impReplace"> add to the open class (instead of a new class)</label>
+              </div>
+              <div class="imp-res" id="impRes"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <footer><button id="impCancel">Cancel</button><span class="sp"></span><span id="impCount" style="color:var(--muted)"></span><button class="primary" id="impOk" disabled>Import</button></footer>
+    </div>
+  </div>
+
+
+  <div class="sp-toast" id="toast"></div>
+  <div class="sp-busy" id="busy">Working …</div>
+  <input type="file" id="filePdf" accept="application/pdf,.pdf" hidden>
+</div>
+<script>
+(() => {
+'use strict';
+// PDF reader (pdf.js): first the copy shipped next to this page (folder "pdfjs"), then public CDNs as fallback
+const PDFJS_SOURCES = [
+  ['./pdfjs/pdf.min.js', './pdfjs/pdf.worker.min.js'],
+  ['https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/legacy/build/pdf.min.mjs', 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.8.69/legacy/build/pdf.worker.min.mjs'],
+  ['https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.min.mjs', 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.8.69/pdf.worker.min.mjs']
+];
+const STORE_KEY = 'namen-lernen-v1';
+const $ = id => document.getElementById(id);
+const app = $('spApp');
+let state = { meta: { klasse: '', fach: '', lehrer: '', raum: '', datum: '' }, students: [], stats: {}, assign: {}, nameMode: 'firstI' };
+let _nid = 0;
+const nid = p => p + (++_nid) + Math.random().toString(36).slice(2, 6);
+function toast(msg, ms = 2600) { const t = $('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove('show'), ms); }
+function busy(on, msg) { $('busy').textContent = msg || 'Working …'; $('busy').classList.toggle('show', !!on); }
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function splitName(n) {
+  n = (n || '').trim();
+  if (n.includes(',')) { const [a, ...b] = n.split(','); return { first: b.join(',').trim(), last: a.trim() }; }
+  const parts = n.split(/\s+/); if (parts.length < 2) return { first: n, last: '' };
+  return { first: parts.slice(0, -1).join(' '), last: parts[parts.length - 1] };
+}
+const initials = n => { const { first, last } = splitName(n); return ((first[0] || '') + (last[0] || '')).toUpperCase() || '?'; };
+const sortKey = n => { const { first, last } = splitName(n); return (last + ' ' + first).toLocaleLowerCase('de'); };
+// same first name in the class -> add first letter(s) of the last name ("Lena M.")
+function firstUnique(name, list) {
+  const { first, last } = splitName(name), f = (first || last).toLowerCase();
+  const others = list.map(o => splitName(o.name)).filter(o => (o.first || o.last).toLowerCase() === f);
+  if (others.length < 2 || !last) return first || last;
+  let k = 1;
+  while (k < last.length && others.filter(o => o.last.slice(0, k).toLowerCase() === last.slice(0, k).toLowerCase()).length > 1) k++;
+  return (first || last) + ' ' + last.slice(0, k) + '.';
+}
+const target = s => { if (state.nameMode === 'full') return s.name; if (state.nameMode === 'first') return firstUnique(s.name, state.students); const { first, last } = splitName(s.name); return (first || last) + (first && last ? ' ' + last[0] + '.' : ''); };
+const shuffle = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const byId = id => state.students.find(s => s.id === id);
+const photoHTML = s => s.photo ? `<img src="${s.photo}" alt="">` : `<div class="initials">${esc(initials(s.name))}</div>`;
+function stat(id, ok) { const st = state.stats[id] || (state.stats[id] = { r: 0, w: 0 }); ok ? st.r++ : st.w++; persist(); }
+
+// ---- classes: one or more selected classes are learned together ----
+const SEL_KEY = 'namen-auswahl', STATS_KEY = 'namen-stats';
+let classes = [], selected = new Set();
+function pushUndo() { }
+function syncControls() { renderHead(); }
+function render() { renderHead(); go(view); }
+let persistT = null;
+function persist() { clearTimeout(persistT); persistT = setTimeout(() => { persistT = null; try { localStorage.setItem(STATS_KEY, JSON.stringify({ stats: state.stats, nameMode: state.nameMode, v2: true })); localStorage.setItem(SEL_KEY, JSON.stringify([...selected])); } catch (e) { } }, 300); }
+window.addEventListener('pagehide', () => { if (persistT) { clearTimeout(persistT); try { localStorage.setItem(STATS_KEY, JSON.stringify({ stats: state.stats, nameMode: state.nameMode, v2: true })); localStorage.setItem(SEL_KEY, JSON.stringify([...selected])); } catch (e) { } } });
+function rebuild() {
+  const sel = classes.filter(c => selected.has(c.id)).sort((a, b) => (a.created || 0) - (b.created || 0));
+  state.students = sel.flatMap(c => (c.students || []).map(s => ({ ...s, classId: c.id })));
+  state.meta = sel.length === 1 ? { ...sel[0].meta } : {};
+}
+async function saveClassOf(sid, fn) {
+  const st = byId(sid); if (!st) return;
+  const c = classes.find(x => x.id === st.classId); if (!c) return;
+  fn(c); c.updated = Date.now();
+  try { await DB.put('classes', c); } catch (e) { toast('Saving failed.'); }
+  rebuild(); renderHead();
+}
+const canAddToCurrent = () => false;
+async function onImported(list, meta) {
+  const c = newClassRecord(list, meta);
+  classes.push(c);
+  try { await DB.put('classes', c); } catch (e) { toast('Saving in the browser failed.'); }
+  selected = new Set([c.id]); rebuild(); persist();
+  toast(`Class “${classLabel(c)}” saved – ${list.length} students. Have fun learning!`, 3500);
+  go('cards');
+}
+
+// ---------------- class library (shared) ----------------
+/* Safari compatibility: ReadableStream is not async-iterable there, pdf.js needs it (text extraction, image decoding). */
+(function () { try { if (typeof ReadableStream !== 'undefined' && !ReadableStream.prototype[Symbol.asyncIterator]) { const it = async function* () { const r = this.getReader(); try { for (;;) { const { done, value } = await r.read(); if (done) return; yield value; } } finally { r.releaseLock(); } }; ReadableStream.prototype[Symbol.asyncIterator] = it; if (!ReadableStream.prototype.values) ReadableStream.prototype.values = it; } } catch (e) { } })();
+// Classes (student list + photos) are kept in the browser's IndexedDB and shown as tiles.
+const DB = (() => {
+  let dbp = null, mem = null;
+  function open() {
+    if (dbp) return dbp;
+    dbp = new Promise(res => {
+      try {
+        const r = indexedDB.open('klassen-werkstatt', 1);
+        r.onupgradeneeded = () => { const d = r.result; for (const n of ['classes', 'plans']) if (!d.objectStoreNames.contains(n)) d.createObjectStore(n, { keyPath: 'id' }); };
+        r.onsuccess = () => res(r.result); r.onerror = () => res(null); r.onblocked = () => res(null);
+      } catch (e) { res(null); }
+    }).then(d => { if (!d) { mem = { classes: new Map(), plans: new Map() }; api.persistent = false; } return d; });
+    return dbp;
+  }
+  async function run(store, mode, fn) {
+    const d = await open();
+    if (!d) return fn(null, mem[store]).result;
+    return new Promise((res, rej) => { const t = d.transaction(store, mode), r = fn(t.objectStore(store)); t.oncomplete = () => res(r ? r.result : undefined); t.onerror = () => rej(t.error); t.onabort = () => rej(t.error); });
+  }
+  const api = {
+    persistent: true,
+    all: s => run(s, 'readonly', (os, m) => os ? os.getAll() : { result: [...m.values()] }),
+    get: (s, id) => run(s, 'readonly', (os, m) => os ? os.get(id) : { result: m.get(id) }),
+    put: (s, v) => run(s, 'readwrite', (os, m) => os ? os.put(v) : (m.set(v.id, JSON.parse(JSON.stringify(v))), { result: v.id })),
+    del: (s, id) => run(s, 'readwrite', (os, m) => os ? os.delete(id) : (m.delete(id), { result: undefined }))
+  };
+  return api;
+})();
+const classLabel = c => (c.meta && c.meta.klasse) || 'Unnamed';
+function classTileHTML(c, o = {}) {
+  const m = c.meta || {}, ph = (c.students || []).filter(s => s.photo).slice(0, 4);
+  return `<div class="ktile${o.active ? ' active' : ''}${o.selected ? ' sel' : ''}" data-k="${c.id}" title="${esc([m.klasse && 'Class ' + m.klasse, m.fach, m.lehrer, m.datum].filter(Boolean).join(' · '))}">` +
+    (o.check ? `<span class="kchk">${o.selected ? '✓' : ''}</span>` : '') +
+    `<div class="kmos">${ph.map(s => `<img src="${s.photo}" alt="">`).join('') || '<span>👥</span>'}</div>` +
+    `<div class="ktxt"><b>${esc(classLabel(c))}${m.fach ? ' · ' + esc(m.fach) : ''}</b><small>${(c.students || []).length} students${m.datum ? ' · ' + esc(m.datum) : ''}</small></div>` +
+    `<button class="kdel" title="Delete class">×</button></div>`;
+}
+// first click arms, second click (within 3 s) deletes
+function armDelete(btn, fn) {
+  if (btn.classList.contains('armed')) { btn.classList.remove('armed'); fn(); return; }
+  btn.classList.add('armed'); btn.textContent = 'Delete?';
+  setTimeout(() => { btn.classList.remove('armed'); btn.textContent = '×'; }, 3000);
+}
+function newClassRecord(list, meta) {
+  return { id: nid('k'), meta: Object.assign({ klasse: '', fach: '', raum: '', lehrer: '', datum: '' }, meta || {}), students: list, created: Date.now() };
+}
+
+// ---------------- PDF import ----------------
+let pdfjs = null, imp = null;
+async function loadPdfJs() {
+  if (pdfjs) return pdfjs;
+  let last = null;
+  for (const [lib, worker] of PDFJS_SOURCES) {
+    try {
+      const m = await import(new URL(lib, location.href).href);
+      m.GlobalWorkerOptions.workerSrc = new URL(worker, location.href).href;
+      return (pdfjs = m);
+    } catch (e) { last = e; console.warn('pdf.js not loaded from', lib, e); }
+  }
+  throw Object.assign(new Error('PDF library could not be loaded'), { libFailed: true, cause: last });
+}
+const mul = (a, b) => [a[0] * b[0] + a[2] * b[1], a[1] * b[0] + a[3] * b[1], a[0] * b[2] + a[2] * b[3], a[1] * b[2] + a[3] * b[3], a[0] * b[4] + a[2] * b[5] + a[4], a[1] * b[4] + a[3] * b[5] + a[5]];
+const app2 = (m, x, y) => [m[0] * x + m[2] * y + m[4], m[1] * x + m[3] * y + m[5]];
+
+async function analysePage(page, lib) {
+  const base = page.getViewport({ scale: 1 });
+  const s = Math.min(3, 2200 / Math.max(base.width, base.height));
+  const vp = page.getViewport({ scale: s });
+  const canvas = document.createElement('canvas'); canvas.width = Math.ceil(vp.width); canvas.height = Math.ceil(vp.height);
+  const ctx = canvas.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+  await page.render({ canvasContext: ctx, canvas, viewport: vp }).promise;
+  // images via operator list
+  const ops = await page.getOperatorList(), O = lib.OPS, imgs = [];
+  let ctm = [1, 0, 0, 1, 0, 0]; const stack = [];
+  const imgOps = new Set([O.paintImageXObject, O.paintInlineImageXObject, O.paintJpegXObject].filter(v => v !== undefined));
+  const addBox = m => {
+    const f = mul(vp.transform, m), pts = [app2(f, 0, 0), app2(f, 1, 0), app2(f, 0, 1), app2(f, 1, 1)];
+    const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+    let x0 = Math.max(0, Math.min(...xs)), y0 = Math.max(0, Math.min(...ys)), x1 = Math.min(canvas.width, Math.max(...xs)), y1 = Math.min(canvas.height, Math.max(...ys));
+    if (x1 - x0 > 4 && y1 - y0 > 4) imgs.push({ x: x0, y: y0, w: x1 - x0, h: y1 - y0 });
+  };
+  for (let i = 0; i < ops.fnArray.length; i++) {
+    const fn = ops.fnArray[i], a = ops.argsArray[i];
+    if (fn === O.save) stack.push(ctm);
+    else if (fn === O.restore) ctm = stack.pop() || ctm;
+    else if (fn === O.transform) ctm = mul(ctm, Array.from(a));
+    else if (fn === O.paintFormXObjectBegin) { stack.push(ctm); if (a && a[0]) ctm = mul(ctm, Array.from(a[0])); }
+    else if (fn === O.paintFormXObjectEnd) ctm = stack.pop() || ctm;
+    else if (imgOps.has(fn)) addBox(ctm);
+    else if (fn === O.paintImageXObjectRepeat && a) {
+      const [, sx, sy, pos] = a; for (let j = 0; j < pos.length; j += 2) addBox(mul(ctm, [sx, 0, 0, sy, pos[j], pos[j + 1]]));
+    }
+  }
+  // text
+  const tc = await page.getTextContent(), texts = [];
+  for (const it of tc.items) {
+    if (!it.str || !it.str.trim()) continue;
+    const m = mul(vp.transform, it.transform), fh = Math.hypot(m[2], m[3]) || 10;
+    const w = (it.width || it.str.length * 5) * s;
+    texts.push({ str: it.str, x: m[4], y: m[5] - fh * .85, w, h: fh, base: m[5] });
+  }
+  return { canvas, W: canvas.width, H: canvas.height, imgs, texts };
+}
+
+function filterImages(pg) {
+  const A = pg.W * pg.H;
+  let c = pg.imgs.filter(b => Math.min(b.w, b.h) > Math.min(pg.W, pg.H) * 0.035 && b.w * b.h < A * 0.4);
+  // dedupe overlapping
+  const out = [];
+  for (const b of c.sort((p, q) => q.w * q.h - p.w * p.h)) {
+    if (out.some(o => { const ix = Math.max(0, Math.min(o.x + o.w, b.x + b.w) - Math.max(o.x, b.x)), iy = Math.max(0, Math.min(o.y + o.h, b.y + b.h) - Math.max(o.y, b.y)); return ix * iy > 0.6 * Math.min(o.w * o.h, b.w * b.h); })) continue;
+    out.push(b);
+  }
+  return out;
+}
+function joinLines(items) {
+  if (!items.length) return [];
+  items = [...items].sort((a, b) => a.base - b.base || a.x - b.x);
+  const lines = [];
+  for (const t of items) {
+    const L = lines.find(l => Math.abs(l.base - t.base) < t.h * .5);
+    if (L) L.items.push(t); else lines.push({ base: t.base, items: [t] });
+  }
+  return lines.sort((a, b) => a.base - b.base).map(l => {
+    l.items.sort((a, b) => a.x - b.x);
+    let s = ''; let prevEnd = null;
+    for (const t of l.items) { if (prevEnd !== null && t.x - prevEnd > t.h * .15 && !s.endsWith(' ') && !t.str.startsWith(' ')) s += ' '; s += t.str; prevEnd = t.x + t.w; }
+    return { text: s.replace(/\s+/g, ' ').trim(), base: l.base, h: Math.max(...l.items.map(t => t.h)) };
+  }).filter(l => l.text);
+}
+// header info (Kurs / Klasse / Fach / Lehrperson) from the first page
+function headerSegments(texts) {
+  const lines = [];
+  for (const t of [...texts].sort((a, b) => a.base - b.base || a.x - b.x)) {
+    const L = lines.find(l => Math.abs(l.base - t.base) < t.h * .5);
+    if (L) L.items.push(t); else lines.push({ base: t.base, items: [t] });
+  }
+  const segs = [];
+  for (const l of lines.sort((a, b) => a.base - b.base)) {
+    l.items.sort((a, b) => a.x - b.x); let cur = null;
+    for (const t of l.items) {
+      if (cur && t.x - cur.end > t.h * 2.5) { segs.push(cur.s); cur = null; }
+      if (!cur) cur = { s: '', end: 0 };
+      if (cur.s && t.x - cur.end > t.h * .15 && !cur.s.endsWith(' ')) cur.s += ' ';
+      cur.s += t.str; cur.end = t.x + t.w;
+    }
+    if (cur) segs.push(cur.s);
+  }
+  return segs.map(x => x.replace(/\s+/g, ' ').trim()).filter(Boolean);
+}
+// keep only first first-name + (first part of) last name:
+// "Stefan Alexandru Muster" -> "Stefan Muster", "Axelle Krayenbühl-Tapponnier" -> "Axelle Krayenbühl",
+// "Muster-Beispiel, Stefan Alexandru" -> "Stefan Muster"
+function shortName(n) {
+  n = (n || '').replace(/\s+/g, ' ').trim();
+  if (n.includes(',')) { const [a, ...b] = n.split(','); return (b.join(',').trim().split(' ')[0] + ' ' + a.trim().split(/[\s-]+/)[0]).trim(); }
+  const w = n.split(' ');
+  return w.length < 2 ? n : w[0] + ' ' + w[w.length - 1].split('-')[0];
+}
+function detectMeta(texts) {
+  const m = {}, cut = v => v.split(/\s{2,}|\s[·|•]\s/)[0].trim();
+  for (const s of headerSegments(texts)) {
+    let r;
+    if (!m.fach && (r = s.match(/^Kurs\s*:\s*(.+?)\s*\(([^)]+)\)/i))) { m.fach = r[1].trim(); m.klasse = r[2].trim(); continue; }
+    if (!m.fach && (r = s.match(/^Kurs\s*:\s*(.+)/i))) { m.fach = cut(r[1]); continue; }
+    if (!m.fach && (r = s.match(/^Fach\s*:\s*(.+)/i))) { m.fach = cut(r[1]); continue; }
+    if (!m.klasse && (r = s.match(/^Klasse\s*:?\s*(\d{1,2}\s?[a-zA-Z]{0,3})\b/i))) { m.klasse = r[1].replace(/\s/g, ''); continue; }
+    if (!m.lehrer && (r = s.match(/^(?:Klassen)?(?:Lehrperson|Lehrkraft|Lehrer(?:in|\/in)?)\s*:\s*(.+)/i))) { m.lehrer = shortName(cut(r[1])); continue; }
+    if (!m.raum && (r = s.match(/^(?:Zimmer|Raum)\s*:\s*(.+)/i))) { m.raum = cut(r[1]); continue; }
+  }
+  return m;
+}
+const isJunk = l => /^[\W\d_]*$/.test(l) || /^\d{1,2}[./-]\d{1,2}[./-]\d{2,4}$/.test(l);
+function nameFromLines(lines) {
+  // take neighbouring lines only (stops before footers / far-away text)
+  const out = []; let prev = null;
+  for (const l of lines) {
+    if (prev && l.base - prev.base > Math.max(l.h, prev.h) * 2.2) break;
+    prev = l; if (!isJunk(l.text)) out.push(l.text); if (out.length >= 2) break;
+  }
+  return out.join(' ').replace(/\s+/g, ' ').trim();
+}
+
+function cropToDataURL(src, x, y, w, h, trim) {
+  x = Math.max(0, Math.round(x)); y = Math.max(0, Math.round(y)); w = Math.round(Math.min(w, src.width - x)); h = Math.round(Math.min(h, src.height - y));
+  if (w < 4 || h < 4) return null;
+  if (trim) {
+    const d = src.getContext('2d').getImageData(x, y, w, h).data; let x0 = w, y0 = h, x1 = -1, y1 = -1;
+    for (let j = 0; j < h; j += 2) for (let i = 0; i < w; i += 2) { const k = (j * w + i) * 4; if (d[k] + d[k + 1] + d[k + 2] < 690) { if (i < x0) x0 = i; if (i > x1) x1 = i; if (j < y0) y0 = j; if (j > y1) y1 = j; } }
+    if (x1 < 0) return null;
+    if ((x1 - x0) * (y1 - y0) < w * h * 0.06) return null;
+    x += x0; y += y0; w = x1 - x0 + 2; h = y1 - y0 + 2;
+  }
+  const s = Math.min(1, 320 / h), c = document.createElement('canvas'); c.width = Math.max(1, Math.round(w * s)); c.height = Math.max(1, Math.round(h * s));
+  c.getContext('2d').drawImage(src, x, y, w, h, 0, 0, c.width, c.height);
+  return c.toDataURL('image/jpeg', .86);
+}
+
+function detectAuto() {
+  const res = [];
+  for (const pg of imp.pages) {
+    const imgs = filterImages(pg);
+    if (imgs.length >= 3) { // drop outliers (logos) by area
+      const areas = imgs.map(b => b.w * b.h).sort((a, b) => a - b), med = areas[Math.floor(areas.length / 2)];
+      for (let i = imgs.length - 1; i >= 0; i--) { const a = imgs[i].w * imgs[i].h; if (a < med * .4 || a > med * 2.5) imgs.splice(i, 1); }
+    }
+    imgs.sort((a, b) => (Math.abs(a.y - b.y) > Math.min(a.h, b.h) * .5 ? a.y - b.y : a.x - b.x));
+    const buckets = imgs.map(() => []), used = new Set();
+    // pass 1: text below photo
+    pg.texts.forEach((t, ti) => {
+      const cx = t.x + t.w / 2; let best = -1, bd = Infinity;
+      imgs.forEach((b, bi) => {
+        if (cx < b.x - b.w * .3 || cx > b.x + b.w * 1.3) return;
+        const d = t.y - (b.y + b.h); if (d < -t.h * .6 || d > b.h * .75) return;
+        if (d < bd) { bd = d; best = bi; }
+      });
+      if (best >= 0) { buckets[best].push(t); used.add(ti); }
+    });
+    // pass 2: text right of photo (list layout) / above
+    imgs.forEach((b, bi) => {
+      if (buckets[bi].length) return;
+      const right = pg.texts.filter((t, ti) => !used.has(ti) && t.y + t.h / 2 > b.y && t.y + t.h / 2 < b.y + b.h && t.x >= b.x + b.w - 4 && t.x < b.x + b.w + Math.max(3 * b.w, 250));
+      if (right.length) {
+        const lines = joinLines(right).filter(l => !isJunk(l.text));
+        if (lines.length) { buckets[bi] = [{ str: lines[0].text, x: 0, y: 0, w: 0, h: 1, base: 0 }]; return; }
+      }
+      const above = pg.texts.filter((t, ti) => !used.has(ti) && t.x + t.w / 2 > b.x - b.w * .3 && t.x + t.w / 2 < b.x + b.w * 1.3 && b.y - (t.y + t.h) < b.h * .5 && t.y + t.h <= b.y + 4);
+      buckets[bi] = above;
+    });
+    imgs.forEach((b, bi) => {
+      res.push({ id: nid('s'), photo: cropToDataURL(pg.canvas, b.x, b.y, b.w, b.h, false), raw: nameFromLines(joinLines(buckets[bi])), keep: true });
+    });
+  }
+  return res;
+}
+
+function gridCfg() { const g = id => +$(id).value || 0; return { rows: Math.max(1, g('gRows')), cols: Math.max(1, g('gCols')), mt: g('gMt') / 100, mb: g('gMb') / 100, ml: g('gMl') / 100, mr: g('gMr') / 100, nz: g('gNz') / 100 }; }
+function gridCells(pg, c) {
+  const L = pg.W * c.ml, T = pg.H * c.mt, gw = pg.W * (1 - c.ml - c.mr), gh = pg.H * (1 - c.mt - c.mb), cw = gw / c.cols, ch = gh / c.rows, out = [];
+  for (let r = 0; r < c.rows; r++) for (let k = 0; k < c.cols; k++) {
+    const x = L + k * cw, y = T + r * ch, pad = Math.min(cw, ch) * .03;
+    out.push({ cell: { x, y, w: cw, h: ch }, photo: { x: x + pad, y: y + pad, w: cw - 2 * pad, h: ch * (1 - c.nz) - pad }, name: { x, y: y + ch * (1 - c.nz), w: cw, h: ch * c.nz } });
+  }
+  return out;
+}
+const inside = (t, r) => { const cx = t.x + t.w / 2, cy = t.y + t.h / 2; return cx >= r.x && cx <= r.x + r.w && cy >= r.y && cy <= r.y + r.h; };
+function detectGrid() {
+  const c = gridCfg(), res = []; let n = 0;
+  for (const pg of imp.pages) for (const g of gridCells(pg, c)) {
+    const photo = cropToDataURL(pg.canvas, g.photo.x, g.photo.y, g.photo.w, g.photo.h, true);
+    if (!photo) continue;
+    let tx = pg.texts.filter(t => inside(t, g.name)); if (!tx.length) tx = pg.texts.filter(t => inside(t, g.cell));
+    n++; res.push({ id: nid('s'), photo, raw: nameFromLines(joinLines(tx)) || `Student ${n}`, keep: true });
+  }
+  return res;
+}
+function drawPreview() {
+  if (!imp) return;
+  const pg = imp.pages[imp.pi], cv = $('prevCanvas'), s = Math.min(1, 700 / pg.W);
+  cv.width = pg.W * s; cv.height = pg.H * s; const ctx = cv.getContext('2d');
+  ctx.drawImage(pg.canvas, 0, 0, cv.width, cv.height);
+  ctx.lineWidth = 2;
+  if (imp.mode === 'grid') {
+    for (const g of gridCells(pg, gridCfg())) {
+      ctx.strokeStyle = 'rgba(37,87,214,.9)'; ctx.strokeRect(g.photo.x * s, g.photo.y * s, g.photo.w * s, g.photo.h * s);
+      ctx.fillStyle = 'rgba(230,140,0,.18)'; ctx.fillRect(g.name.x * s, g.name.y * s, g.name.w * s, g.name.h * s);
+    }
+  } else {
+    ctx.strokeStyle = 'rgba(37,87,214,.9)'; for (const b of filterImages(pg)) ctx.strokeRect(b.x * s, b.y * s, b.w * s, b.h * s);
+  }
+  $('pLbl').textContent = `Page ${imp.pi + 1} / ${imp.pages.length}`;
+  $('pPrev').disabled = imp.pi === 0; $('pNext').disabled = imp.pi >= imp.pages.length - 1;
+}
+function fmtName(raw) {
+  const n = (raw || '').replace(/\s+/g, ' ').trim(), short = $('dblName').checked, swap = $('nameFmt').value === 'swap';
+  if (n.includes(',')) { // "Nachname(n), Vorname(n)"
+    const [a, ...b] = n.split(','), firsts = b.join(',').trim();
+    const last = short ? a.trim().split(/[\s-]+/)[0] : a.trim(), first = short ? firsts.split(' ')[0] : firsts;
+    return (swap ? first + ' ' + last : last + ', ' + first).trim();
+  }
+  return short ? shortName(n) : n;
+}
+function renderResults() {
+  const list = imp.results.filter(r => r.keep);
+  $('impRes').innerHTML = list.map(r => `<div class="imp-c" data-r="${r.id}"><button class="x" title="Remove">×</button>${r.photo ? `<img src="${r.photo}" alt="">` : '<img alt="">'}<input value="${esc(r.name ?? fmtName(r.raw))}" placeholder="Name"></div>`).join('') || '<div style="color:var(--muted)">No students detected.</div>';
+  $('impCount').textContent = `${list.length} students detected`;
+  $('impOk').disabled = !list.length; $('impOk').textContent = `Import ${list.length}`;
+}
+function runDetect() {
+  imp.results = imp.mode === 'grid' ? detectGrid() : detectAuto();
+  const msg = $('impMsg'); msg.textContent = '';
+  if (imp.mode === 'auto' && imp.results.length < 2) {
+    msg.style.display = ''; msg.textContent = 'No individual photos were found in this PDF (e.g. a scanned list), so grid mode is used: set rows/columns and margins on the left until the blue frames sit on the photos.';
+    imp.mode = 'grid'; setTabs(); imp.results = detectGrid();
+  } else if (imp.mode === 'auto') {
+    msg.style.display = ''; msg.textContent = 'Photos and names were detected automatically. Please check the names – remove wrong cards with ×. If the split is wrong, switch to “Grid” at the top.';
+  } else msg.style.display = 'none';
+  const mt = imp.meta, parts = [mt.klasse && 'Class ' + mt.klasse, mt.fach && 'Subject ' + mt.fach, mt.lehrer && 'Teacher ' + mt.lehrer, mt.raum && 'Room ' + mt.raum].filter(Boolean);
+  if (parts.length) { msg.style.display = ''; msg.textContent += (msg.textContent ? ' ' : '') + 'Detected from the PDF header: ' + parts.join(' · ') + '.'; }
+  $('impGrid').classList.toggle('nopreview', false);
+  $('gridSet').style.display = imp.mode === 'grid' ? '' : 'none';
+  drawPreview(); renderResults();
+}
+function setTabs() { document.querySelectorAll('#impTabs button').forEach(b => b.classList.toggle('on', b.dataset.mode === imp.mode)); }
+function openImport() {
+  imp = null; $('impDrop').style.display = ''; $('impErr').style.display = 'none'; $('impWork').style.display = 'none'; $('impTabs').style.display = 'none';
+  $('impOk').disabled = true; $('impCount').textContent = ''; $('impReplace').checked = false;
+  $('impReplace').parentElement.style.display = canAddToCurrent() ? '' : 'none';
+  $('dlgImport').classList.add('show');
+  // offer the example class list if it is next to this page (folder "example")
+  fetch(EXAMPLE_PDF, { method: 'HEAD', cache: 'no-store' }).then(r => { $('exWrap').style.display = r.ok ? '' : 'none'; }).catch(() => { $('exWrap').style.display = 'none'; });
+}
+const EXAMPLE_PDF = './example/example-class-list.pdf';
+async function loadExample() {
+  try {
+    busy(true, 'Loading example …');
+    const r = await fetch(EXAMPLE_PDF, { cache: 'no-store' }); if (!r.ok) throw new Error('HTTP ' + r.status);
+    const blob = await r.blob(); busy(false);
+    await handlePdf(new File([blob], 'example-class-list.pdf', { type: 'application/pdf' }));
+  } catch (e) { busy(false); toast('The example could not be loaded.'); }
+}
+async function handlePdf(file) {
+  if (!file) return;
+  $('impErr').style.display = 'none';
+  busy(true, 'Reading PDF …');
+  try {
+    const lib = await loadPdfJs();
+    const doc = await lib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+    const pages = [];
+    for (let i = 1; i <= Math.min(doc.numPages, 12); i++) { busy(true, `Analysing page ${i} of ${doc.numPages} …`); pages.push(await analysePage(await doc.getPage(i), lib)); }
+    imp = { pages, pi: 0, mode: 'auto', results: [], meta: detectMeta(pages[0].texts) };
+    $('impDrop').style.display = 'none'; $('impWork').style.display = ''; $('impTabs').style.display = '';
+    setTabs(); runDetect();
+  } catch (err) {
+    console.error(err);
+    const msg = err && err.libFailed ? 'The PDF reader could not be loaded. Check the internet connection – or, on your own website, that the folder “pdfjs” was uploaded next to index.html.' : 'Could not read this PDF (' + ((err && err.message) || err) + ').';
+    $('impErr').textContent = msg; $('impErr').style.display = ''; toast(msg, 6000);
+  } finally { busy(false); }
+}
+$('bImport').addEventListener('click', openImport);
+$('bExample').addEventListener('click', loadExample);
+$('bPick').addEventListener('click', () => $('filePdf').click());
+$('filePdf').addEventListener('change', e => { const f = e.target.files[0]; e.target.value = ''; handlePdf(f); });
+const dz = $('impDrop');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('over'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('over'); const f = [...e.dataTransfer.files].find(f => /pdf$/i.test(f.name) || f.type === 'application/pdf'); if (f) handlePdf(f); else toast('Please use a PDF file.'); });
+$('impTabs').addEventListener('click', e => { const m = e.target.dataset.mode; if (!m || !imp) return; imp.mode = m; setTabs(); runDetect(); });
+$('gridSet').addEventListener('input', () => { if (!imp) return; clearTimeout(runDetect._t); drawPreview(); runDetect._t = setTimeout(runDetect, 350); });
+$('pPrev').addEventListener('click', () => { if (imp.pi > 0) { imp.pi--; drawPreview(); } });
+$('pNext').addEventListener('click', () => { if (imp.pi < imp.pages.length - 1) { imp.pi++; drawPreview(); } });
+$('nameFmt').addEventListener('change', () => { if (imp) { imp.results.forEach(r => delete r.name); renderResults(); } });
+$('dblName').addEventListener('change', () => { if (imp) { imp.results.forEach(r => delete r.name); renderResults(); } });
+$('impRes').addEventListener('input', e => { const c = e.target.closest('[data-r]'); if (c) imp.results.find(r => r.id === c.dataset.r).name = e.target.value; });
+$('impRes').addEventListener('click', e => { if (!e.target.classList.contains('x')) return; const c = e.target.closest('[data-r]'); imp.results.find(r => r.id === c.dataset.r).keep = false; renderResults(); });
+$('impCancel').addEventListener('click', () => $('dlgImport').classList.remove('show'));
+$('impOk').addEventListener('click', () => {
+  const list = imp.results.filter(r => r.keep).map((r, i) => ({ id: nid('s'), name: (r.name ?? fmtName(r.raw)).trim() || `Student ${i + 1}`, photo: r.photo }));
+  $('dlgImport').classList.remove('show');
+  onImported(list, imp.meta || {}, $('impReplace').checked && canAddToCurrent());
+});
+
+
+
+// ================= game =================
+let view = 'cards', keyHandler = null;
+function renderHead() {
+  const sel = classes.filter(c => selected.has(c.id));
+  $('clsInfo').textContent = sel.length ? (sel.length === 1 ? 'Class ' : 'Classes ') + sel.map(classLabel).join(' + ') + ' · ' + state.students.length + ' students' : '';
+  $('tabs').style.display = classes.length ? '' : 'none';
+  document.querySelectorAll('#tabs [data-v]').forEach(b => { if (b.dataset.v !== 'classes') b.disabled = !state.students.length; });
+  renderBar();
+  $('nameMode').value = state.nameMode;
+  document.querySelectorAll('#tabs [data-v]').forEach(b => b.classList.toggle('on', b.dataset.v === view));
+}
+function go(v) {
+  view = v; keyHandler = null; clearTimeout(go._t); clearInterval(mm.timer);
+  renderHead();
+  if (!classes.length) { view = 'classes'; renderHead(); return welcome(); }
+  if (!state.students.length) { view = 'cards'; renderHead(); return viewClasses(); }
+  if (v === 'classes') view = v = 'cards';
+  ({ classes: viewClasses, cards: startCards, quiz: startQuiz, memory: startMemory, write: startWrite, list: viewList })[v]();
+}
+$('tabs').addEventListener('click', e => { const v = e.target.dataset.v; if (v) go(v); });
+$('nameMode').addEventListener('change', e => { state.nameMode = e.target.value; persist(); go(view); });
+document.addEventListener('keydown', e => {
+  if (document.querySelector('.sp-modal.show')) { if (e.key === 'Escape') document.querySelectorAll('.sp-modal.show').forEach(m => m.classList.remove('show')); return; }
+  if (keyHandler) keyHandler(e);
+});
+const V = () => $('view');
+function progress(done, total, label) { return `<div class="prog"><span>${label ?? `${done} / ${total}`}</span><div class="bar"><i style="width:${total ? done / total * 100 : 0}%"></i></div></div>`; }
+function doneBox(title, text, buttons) {
+  V().innerHTML = `<div class="done-box"><h2>${title}</h2><p>${text}</p><div class="row">${buttons.map((b, i) => `<button class="${i === 0 ? 'primary' : ''}" data-i="${i}">${b[0]}</button>`).join('')}</div></div>`;
+  V().querySelectorAll('[data-i]').forEach(el => el.addEventListener('click', () => buttons[+el.dataset.i][1]()));
+}
+
+function welcome() {
+  V().innerHTML = `<div class="welcome"><h2>Learn your students’ first names</h2>
+  <p>Load the class list with photos (PDF). The class is saved in your browser and shown as a tile – you can also learn several classes together.</p>
+  <button class="primary big-btn" id="wImp">Load class list (PDF)</button>
+  <div class="modes"><div><b>Flashcards</b>See the photo, flip it, “got it” or “again”.</div><div><b>Quiz</b>Photo → pick the right name (or the other way round).</div><div><b>Memory</b>Match photo and name pairs.</div><div><b>Typing</b>Type the first name yourself.</div></div>
+  <p style="font-size:12.5px">The PDF is processed only in this browser – nothing is uploaded.</p></div>`;
+  $('wImp').addEventListener('click', openImport);
+}
+
+// ---- Lernkarten ----
+let fc = {};
+function startCards(ids) {
+  fc = { queue: shuffle(ids || state.students.map(s => s.id)), again: [], known: 0 };
+  fc.total = fc.queue.length; nextCard();
+}
+function nextCard() {
+  if (!fc.queue.length) {
+    const n = fc.again.length;
+    if (!n) return doneBox('Great – you knew them all! 🎉', `${fc.total} cards in this round.`, [['New round', () => startCards()], ['Play quiz', () => go('quiz')]]);
+    return doneBox('Round finished', `${fc.known} known, ${n} not yet.`, [[`Practise these ${n} again`, () => startCards(fc.again)], ['Reshuffle all', () => startCards()]]);
+  }
+  fc.cur = byId(fc.queue[0]);
+  const s = fc.cur, full = s.name !== target(s) ? `<div class="subname">${esc(s.name)}</div>` : '';
+  V().innerHTML = progress(fc.total - fc.queue.length, fc.total) +
+    `<div class="flip" id="fl"><div class="inner"><div class="face front">${photoHTML(s)}<div class="hint">Tap to flip</div></div>
+     <div class="face back">${photoHTML(s)}<div class="bigname">${esc(target(s))}</div>${full}</div></div></div>
+     <div class="ans"><button class="btn-no" id="bNo">✗ Again</button><button class="btn-yes" id="bYes">✓ Got it</button></div>
+     <div class="keys">Space = flip · ← again · → got it</div>`;
+  $('fl').addEventListener('click', () => $('fl').classList.toggle('on'));
+  $('bNo').addEventListener('click', () => answerCard(false));
+  $('bYes').addEventListener('click', () => answerCard(true));
+  keyHandler = e => {
+    if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'ArrowDown') { e.preventDefault(); $('fl').classList.toggle('on'); }
+    else if (e.key === 'ArrowLeft') answerCard(false); else if (e.key === 'ArrowRight') answerCard(true);
+  };
+}
+function answerCard(ok) {
+  const id = fc.queue.shift(); stat(id, ok);
+  if (ok) fc.known++; else fc.again.push(id);
+  nextCard();
+}
+
+// each person has to be answered correctly REPEAT times (Quiz, Schreiben)
+const REPEAT = 2;
+function laterIn(queue, id) { const lo = Math.min(4, queue.length); queue.splice(lo + Math.floor(Math.random() * (queue.length - lo + 1)), 0, id); }
+
+// ---- Quiz ----
+let qz = {};
+function startQuiz(dir) {
+  const ids = state.students.map(s => s.id);
+  qz = { dir: dir || qz.dir || 'p2n', queue: shuffle(ids), done: 0, first: 0, wrongIds: new Set(), lock: false, need: Object.fromEntries(ids.map(id => [id, REPEAT])), n: ids.length };
+  qz.total = ids.length * REPEAT; nextQuiz();
+}
+function options(t) {
+  const name = target(t), seen = new Set([name.toLowerCase()]), out = [t];
+  for (const s of shuffle(state.students)) { if (out.length >= 4) break; const n = target(s).toLowerCase(); if (s.id !== t.id && !seen.has(n)) { seen.add(n); out.push(s); } }
+  return shuffle(out);
+}
+function nextQuiz() {
+  if (!qz.queue.length) {
+    const pct = Math.round(qz.first / qz.n * 100);
+    return doneBox(pct === 100 ? 'Perfect! 🎉' : 'Quiz done!', `All ${qz.n} names answered correctly ${REPEAT}×. ${qz.first} of ${qz.n} right on the first try (${pct} %).`, [['Again', () => startQuiz()], ['Play memory', () => go('memory')]]);
+  }
+  qz.lock = false;
+  const t = byId(qz.queue[0]), ops = options(t); qz.cur = t; qz.ops = ops;
+  const seg = `<div class="seg"><button data-d="p2n" class="${qz.dir === 'p2n' ? 'on' : ''}">Photo → Name</button><button data-d="n2p" class="${qz.dir === 'n2p' ? 'on' : ''}">Name → Photo</button></div>`;
+  let body;
+  if (qz.dir === 'p2n') body = `<div class="ph-q">${photoHTML(t)}</div><div class="opts">${ops.map((o, i) => `<button data-o="${o.id}"><span class="k">${i + 1}</span>${esc(target(o))}</button>`).join('')}</div>`;
+  else body = `<div class="qname">${esc(target(t))}</div><div class="opts ph">${ops.map(o => `<button data-o="${o.id}">${photoHTML(o)}</button>`).join('')}</div>`;
+  V().innerHTML = seg + progress(qz.done, qz.total) + body + `<div class="fb" id="fb"></div><div class="keys">Keys 1–4 to answer</div>`;
+  V().querySelectorAll('[data-d]').forEach(b => b.addEventListener('click', () => startQuiz(b.dataset.d)));
+  V().querySelectorAll('[data-o]').forEach(b => b.addEventListener('click', () => answerQuiz(b.dataset.o)));
+  keyHandler = e => { const n = +e.key; if (n >= 1 && n <= ops.length) answerQuiz(ops[n - 1].id); };
+}
+function answerQuiz(oid) {
+  if (qz.lock) return; qz.lock = true;
+  const t = qz.cur, ok = oid === t.id;
+  V().querySelectorAll('[data-o]').forEach(b => { if (b.dataset.o === t.id) b.classList.add('ok'); else if (b.dataset.o === oid) b.classList.add('bad'); });
+  const fb = $('fb');
+  qz.queue.shift(); stat(t.id, ok);
+  if (ok) {
+    qz.done++; if (qz.need[t.id] === REPEAT && !qz.wrongIds.has(t.id)) qz.first++;
+    if (--qz.need[t.id] > 0) laterIn(qz.queue, t.id);
+    fb.className = 'fb ok'; fb.textContent = qz.need[t.id] > 0 ? 'Correct! (comes again)' : 'Correct!';
+  }
+  else { qz.wrongIds.add(t.id); qz.queue.splice(Math.min(3, qz.queue.length), 0, t.id); fb.className = 'fb bad'; fb.textContent = `That’s ${t.name}.`; }
+  go._t = setTimeout(nextQuiz, ok ? 750 : 1700);
+}
+
+// ---- Memory ----
+let mm = { pairs: 8 };
+function startMemory(pairs) {
+  clearInterval(mm.timer);
+  const max = Math.min(15, state.students.length);
+  mm.pairs = Math.min(pairs || mm.pairs || 8, max);
+  const pick = shuffle(state.students).slice(0, mm.pairs);
+  mm.cards = shuffle(pick.flatMap(s => [{ id: s.id, t: 'p' }, { id: s.id, t: 'n' }])).map((c, i) => ({ ...c, i, open: false, done: false }));
+  mm.sel = []; mm.moves = 0; mm.found = 0; mm.start = null; mm.lock = false;
+  const sizes = [4, 6, 8, 10, 12, 15].filter(n => n <= max);
+  V().innerHTML = `<div class="mem-top"><span>Pairs: <span class="seg" style="margin:0;vertical-align:middle">${sizes.map(n => `<button data-p="${n}" class="${n === mm.pairs ? 'on' : ''}">${n}</button>`).join('')}</span></span>
+    <span id="mmInfo"></span><button id="mmNew">Reshuffle</button></div><div class="mem" id="mem"></div>`;
+  V().querySelectorAll('[data-p]').forEach(b => b.addEventListener('click', () => startMemory(+b.dataset.p)));
+  $('mmNew').addEventListener('click', () => startMemory(mm.pairs));
+  $('mem').innerHTML = mm.cards.map(c => { const s = byId(c.id); return `<div class="mc" data-c="${c.i}"><div class="inner"><div class="face cover">?</div><div class="face val">${c.t === 'p' ? photoHTML(s) : esc(target(s))}</div></div></div>`; }).join('');
+  $('mem').addEventListener('click', e => { const el = e.target.closest('[data-c]'); if (el) flipMem(+el.dataset.c, el); });
+  mm.timer = setInterval(memInfo, 1000); memInfo();
+}
+const fmtT = ms => { const s = Math.floor(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+function memInfo() { const el = $('mmInfo'); if (el) el.textContent = `${mm.found}/${mm.pairs} pairs · ${mm.moves} moves · ${fmtT(mm.start ? Date.now() - mm.start : 0)}`; }
+function flipMem(i, el) {
+  const c = mm.cards[i]; if (mm.lock || c.open || c.done) return;
+  if (!mm.start) mm.start = Date.now();
+  c.open = true; el.classList.add('open'); mm.sel.push(c);
+  if (mm.sel.length < 2) return;
+  mm.moves++; const [a, b] = mm.sel; mm.sel = [];
+  const els = [a, b].map(x => $('mem').querySelector(`[data-c="${x.i}"]`));
+  if (a.id === b.id) {
+    a.done = b.done = true; mm.found++; stat(a.id, true);
+    els.forEach(e => e.classList.add('done')); memInfo();
+    if (mm.found === mm.pairs) {
+      clearInterval(mm.timer); const t = fmtT(Date.now() - mm.start);
+      go._t = setTimeout(() => doneBox('All pairs found! 🎉', `${mm.moves} moves in ${t}.`, [['Again', () => startMemory(mm.pairs)], ['Practise typing', () => go('write')]]), 700);
+    }
+  } else {
+    mm.lock = true; memInfo();
+    setTimeout(() => { a.open = b.open = false; els.forEach(e => e.classList.remove('open')); mm.lock = false; }, 1000);
+  }
+}
+
+// ---- Schreiben ----
+let wr = {};
+const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z]/g, '');
+function lev(a, b) { const d = Array.from({ length: a.length + 1 }, (_, i) => [i]); for (let j = 1; j <= b.length; j++) d[0][j] = j; for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); return d[a.length][b.length]; }
+function startWrite() { const ids = state.students.map(s => s.id); wr = { queue: shuffle(ids), done: 0, first: 0, wrongIds: new Set(), need: Object.fromEntries(ids.map(id => [id, REPEAT])), n: ids.length }; wr.total = ids.length * REPEAT; nextWrite(); }
+function nextWrite() {
+  if (!wr.queue.length) { const pct = Math.round(wr.first / wr.n * 100); return doneBox('Done! 🎉', `All ${wr.n} names typed correctly ${REPEAT}×. ${wr.first} of ${wr.n} right on the first try (${pct} %).`, [['Again', startWrite], ['Flashcards', () => go('cards')]]); }
+  wr.cur = byId(wr.queue[0]); wr.state = 'ask'; wr.hint = 0;
+  V().innerHTML = progress(wr.done, wr.total) + `<div class="ph-q">${photoHTML(wr.cur)}</div>
+    <div class="wr-in"><input id="wIn" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="${({ first: 'First name', firstI: 'First name + initial', full: 'First and last name' })[state.nameMode]} – type here …"><button class="primary" id="wOk">Check</button></div>
+    <div class="hintline" id="hint"></div>
+    <div class="ans" style="margin-top:10px"><button id="wHint">💡 Hint</button><button id="wSkip">Don’t know</button></div>
+    <div class="fb" id="fb"></div><div class="keys">Enter = check / next · Tab = hint · case and accents don’t matter</div>`;
+  const inp = $('wIn'); setTimeout(() => inp.focus(), 30);
+  $('wOk').addEventListener('click', checkWrite);
+  $('wHint').addEventListener('click', () => { hintWrite(); inp.focus(); });
+  $('wSkip').addEventListener('click', () => revealWrite());
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); checkWrite(); } else if (e.key === 'Tab' && wr.state === 'ask') { e.preventDefault(); hintWrite(); } });
+}
+function hintWrite() {
+  if (wr.state !== 'ask') return;
+  const want = target(wr.cur), letters = [...want].filter(c => /\p{L}/u.test(c)).length;
+  wr.hint++;
+  if (wr.hint >= letters) return revealWrite();
+  let k = 0;
+  $('hint').textContent = [...want].map(c => /\p{L}/u.test(c) ? (k++ < wr.hint ? c : '_') : c).join(' ');
+  $('wHint').textContent = `💡 One more letter`;
+}
+function revealWrite() {
+  if (wr.state !== 'ask') return;
+  const t = wr.cur;
+  wr.queue.shift(); stat(t.id, false); wr.wrongIds.add(t.id); wr.queue.splice(Math.min(3, wr.queue.length), 0, t.id);
+  wr.state = 'shown'; $('wIn').readOnly = true; $('wOk').textContent = 'Next'; $('hint').textContent = '';
+  $('wHint').disabled = $('wSkip').disabled = true;
+  const fb = $('fb'); fb.className = 'fb bad'; fb.textContent = `That’s ${target(t)} – coming again soon.`;
+  $('wOk').focus();
+}
+function checkWrite() {
+  if (wr.state === 'shown') { clearTimeout(go._t); return nextWrite(); }
+  const t = wr.cur, want = target(t), got = $('wIn').value.trim(); if (!got) return;
+  const a = norm(got), b = norm(want), fb = $('fb');
+  const exact = got.toLowerCase() === want.toLowerCase(), ok = exact || a === b || (b.length > 4 && lev(a, b) <= 1);
+  const helped = wr.hint > 0;
+  wr.queue.shift(); stat(t.id, ok && !helped); wr.state = 'shown'; $('wIn').readOnly = true; $('wOk').textContent = 'Next';
+  $('wHint').disabled = $('wSkip').disabled = true;
+  if (ok) {
+    if (helped) { wr.wrongIds.add(t.id); laterIn(wr.queue, t.id); }   // with a hint it does not count yet
+    else { wr.done++; if (wr.need[t.id] === REPEAT && !wr.wrongIds.has(t.id)) wr.first++; if (--wr.need[t.id] > 0) laterIn(wr.queue, t.id); }
+    fb.className = 'fb ok'; fb.textContent = (exact ? 'Correct!' : `Almost – correct spelling: ${want}`) + (helped ? ' (with hint – comes again)' : wr.need[t.id] > 0 ? ' (comes again)' : ''); go._t = setTimeout(nextWrite, exact ? 900 : 1800);
+  }
+  else { wr.wrongIds.add(t.id); wr.queue.splice(Math.min(3, wr.queue.length), 0, t.id); fb.className = 'fb bad'; fb.textContent = `Correct answer: ${want}`; }
+}
+
+// ---- Klasse (Liste + Statistik) ----
+function viewList() {
+  const acc = s => { const st = state.stats[s.id]; return st && st.r + st.w ? st.r / (st.r + st.w) : null; };
+  const list = [...state.students].sort((a, b) => sortKey(a.name).localeCompare(sortKey(b.name), 'de'));
+  V().innerHTML = `<div class="lst-top"><span style="color:var(--muted);font-size:13px">Correct names here. Percentage = share of correct answers.</span><span><button id="lHard">Practise hard ones</button> <button id="lReset">Reset statistics</button></span></div>
+  <div class="lst">${list.map(s => { const a = acc(s); return `<div class="li" data-s="${s.id}"><button class="x" title="Remove">×</button>${photoHTML(s)}<input value="${esc(s.name)}"><div class="acc">${a === null ? 'not practised yet' : `<b style="color:${a >= .8 ? '#067647' : a >= .5 ? '#b54708' : '#b42318'}">${Math.round(a * 100)} %</b> correct`}</div></div>`; }).join('')}</div>`;
+  V().querySelectorAll('.li input').forEach(i => i.addEventListener('change', e => { const id = e.target.closest('[data-s]').dataset.s, v = e.target.value.trim() || 'No name'; saveClassOf(id, c => { const st = c.students.find(x => x.id === id); if (st) st.name = v; }); }));
+  V().querySelectorAll('.li .x').forEach(b => b.addEventListener('click', e => { const id = e.target.closest('[data-s]').dataset.s; armDelete(e.target, async () => { await saveClassOf(id, c => { c.students = c.students.filter(x => x.id !== id); }); delete state.stats[id]; persist(); if (state.students.length) viewList(); else go('classes'); }); }));
+  $('lReset').addEventListener('click', () => { state.stats = {}; persist(); viewList(); toast('Statistics reset.'); });
+  $('lHard').addEventListener('click', () => {
+    const hard = state.students.filter(s => { const a = acc(s); return a === null || a < .8; }).map(s => s.id);
+    if (!hard.length) return toast('No hard names – all above 80 %! 🎉');
+    view = 'cards'; renderHead(); startCards(hard);
+  });
+}
+
+// ---- class bar (always visible) ----
+function renderBar() {
+  $('kbar').style.display = classes.length ? '' : 'none';
+  const list = [...classes].sort((a, b) => (a.created || 0) - (b.created || 0));
+  $('ktiles').innerHTML = list.map(c => classTileHTML(c, { check: true, selected: selected.has(c.id) })).join('') + `<div class="ktile knew" id="kNewBar">+ New class (PDF)</div>`;
+}
+async function removeClass(id) {
+  try { await DB.del('classes', id); await DB.del('plans', id); } catch (er) { }
+  classes = classes.filter(c => c.id !== id); selected.delete(id); rebuild(); persist(); toast('Class deleted.');
+}
+$('ktiles').addEventListener('click', e => {
+  if (e.target.id === 'kNewBar') return openImport();
+  const t = e.target.closest('[data-k]'); if (!t) return;
+  const id = t.dataset.k;
+  if (e.target.classList.contains('kdel')) return armDelete(e.target, async () => { await removeClass(id); go(view); });
+  selected.has(id) ? selected.delete(id) : selected.add(id); rebuild(); persist();
+  go(view);
+});
+
+// ---- Klassen (Auswahl) ----
+function viewClasses() {
+  V().innerHTML = `<div class="welcome"><h2>Choose a class</h2><p>Tap one or more classes in the bar above – then off you go.</p></div>`;
+}
+
+const PRESET = null;
+// ---- init ----
+(async () => {
+  try { const o = JSON.parse(localStorage.getItem(STATS_KEY) || 'null'); if (o) { state.stats = o.stats || {}; state.nameMode = o.v2 ? (o.nameMode || 'firstI') : 'firstI'; } } catch (e) { }
+  try { selected = new Set(JSON.parse(localStorage.getItem(SEL_KEY) || '[]')); } catch (e) { }
+  classes = (await DB.all('classes')) || [];
+  // older version kept one class in localStorage -> move it into the library
+  try {
+    const old = JSON.parse(localStorage.getItem('namen-lernen-v1') || 'null');
+    if (old && Array.isArray(old.students) && old.students.length) {
+      const c = newClassRecord(old.students, old.meta);
+      if (PRESET && localStorage.getItem('namen-lernen-v1-preset') === PRESET.id) c.id = PRESET.id;  // class 1h loaded by the previous version
+      classes.push(c); await DB.put('classes', c); selected.add(c.id);
+      Object.assign(state.stats, old.stats || {}); state.nameMode = old.nameMode || state.nameMode;
+    }
+    localStorage.removeItem('namen-lernen-v1');
+  } catch (e) { }
+  // preloaded class (only in the published page): add it once as its own class tile
+  if (PRESET) {
+    let done = null; try { done = localStorage.getItem('namen-preset'); } catch (e) { }
+    if (done !== PRESET.id && !classes.some(c => c.id === PRESET.id)) {
+      const c = { id: PRESET.id, meta: Object.assign({ klasse: '', fach: '', raum: '', lehrer: '', datum: '' }, PRESET.meta, { lehrer: shortName(PRESET.meta.lehrer || '') }), students: PRESET.students.map(x => ({ ...x, name: shortName(x.name) })), created: Date.now() };
+      classes.push(c); try { await DB.put('classes', c); } catch (e) { } selected.add(c.id);
+    }
+    try { localStorage.setItem('namen-preset', PRESET.id); } catch (e) { }
+  }
+  for (const id of [...selected]) if (!classes.some(c => c.id === id)) selected.delete(id);
+  if (!selected.size && classes.length === 1) selected.add(classes[0].id);
+  rebuild(); persist(); renderHead();
+  go('cards');
+  if (!DB.persistent) toast('Note: classes cannot be stored permanently in this browser.', 5000);
+})();
+})();
+</script>
+</body>
+</html>
