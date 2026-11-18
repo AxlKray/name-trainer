@@ -179,6 +179,11 @@
 }
 
 .wr-in input{min-width:0}
+.add-ph{display:flex;gap:12px;align-items:center}
+.add-prev{width:80px;height:100px;border-radius:10px;overflow:hidden;background:#e6eaef;flex:none}
+.add-prev img{width:100%;height:100%;object-fit:cover;object-position:50% 20%}
+.add-prev .initials{font-size:26px}
+#addName{font-size:16px}
 @media (max-width:600px){
   .nl-head{padding:8px 12px;gap:4px 10px}
   .nl-head h1{font-size:16px}
@@ -250,6 +255,18 @@
   </div>
   <div class="sp-classes" id="kbar" style="display:none"><span class="klbl">Classes <small>(tap = include)</small></span><div class="ktiles" id="ktiles"></div></div>
   <div class="nl-view" id="view"></div>
+  <div class="sp-modal" id="dlgAdd">
+    <div class="sp-dlg small">
+      <header><h3>Add student</h3></header>
+      <div class="body frm">
+        <div class="add-ph"><div class="add-prev" id="addPrev"></div><div style="display:grid;gap:6px"><button id="addPhoto">Choose / take photo…</button><button id="addNoPhoto">Remove photo</button></div></div>
+        <label>Name<input id="addName" placeholder="First Last" autocomplete="off"></label>
+        <label id="addClsWrap">Class<select id="addCls"></select></label>
+      </div>
+      <footer><span class="sp"></span><button id="addCancel">Cancel</button><button class="primary" id="addOk">Add</button></footer>
+    </div>
+  </div>
+  <input type="file" id="fileAddImg" accept="image/*" hidden>
   <footer class="sp-foot"><b>© 2026 AxlKray · Switzerland</b> · No login, no ads, no tracking – completely free.<br>Names, photos and plans are stored only locally in this browser on this device. The PDF itself is not saved. Nothing is uploaded.</footer>
   <!-- Import dialog -->
   <div class="sp-modal" id="dlgImport">
@@ -771,10 +788,14 @@ function doneBox(title, text, buttons) {
 function welcome() {
   V().innerHTML = `<div class="welcome"><h2>Learn your students’ first names</h2>
   <p>Load the class list with photos (PDF). The class is saved in your browser and shown as a tile – you can also learn several classes together.</p>
-  <button class="primary big-btn" id="wImp">Load class list (PDF)</button>
+  <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap"><button class="primary big-btn" id="wImp">Load class list (PDF)</button>
+  <button class="big-btn" id="wEx" style="display:none">Try with example class</button></div>
+  <p id="wExHint" style="display:none;font-size:12.5px;margin-top:8px">No class list at hand? The example class has fictional names and cartoon pictures.</p>
   <div class="modes"><div><b>Flashcards</b>See the photo, flip it, “got it” or “again”.</div><div><b>Quiz</b>Photo → pick the right name (or the other way round).</div><div><b>Memory</b>Match photo and name pairs.</div><div><b>Typing</b>Type the first name yourself.</div></div>
   <p style="font-size:12.5px">The PDF is processed only in this browser – nothing is uploaded.</p></div>`;
   $('wImp').addEventListener('click', openImport);
+  $('wEx').addEventListener('click', () => { openImport(); loadExample(); });
+  fetch(EXAMPLE_PDF, { method: 'HEAD', cache: 'no-store' }).then(r => { if (r.ok && $('wEx')) { $('wEx').style.display = ''; $('wExHint').style.display = ''; } }).catch(() => { });
 }
 
 // ---- Lernkarten ----
@@ -954,10 +975,11 @@ function checkWrite() {
 function viewList() {
   const acc = s => { const st = state.stats[s.id]; return st && st.r + st.w ? st.r / (st.r + st.w) : null; };
   const list = [...state.students].sort((a, b) => sortKey(a.name).localeCompare(sortKey(b.name), 'de'));
-  V().innerHTML = `<div class="lst-top"><span style="color:var(--muted);font-size:13px">Correct names here. Percentage = share of correct answers.</span><span><button id="lHard">Practise hard ones</button> <button id="lReset">Reset statistics</button></span></div>
+  V().innerHTML = `<div class="lst-top"><span style="color:var(--muted);font-size:13px">Correct names here. Percentage = share of correct answers.</span><span><button class="primary" id="lAdd">+ Add student</button> <button id="lHard">Practise hard ones</button> <button id="lReset">Reset statistics</button></span></div>
   <div class="lst">${list.map(s => { const a = acc(s); return `<div class="li" data-s="${s.id}"><button class="x" title="Remove">×</button>${photoHTML(s)}<input value="${esc(s.name)}"><div class="acc">${a === null ? 'not practised yet' : `<b style="color:${a >= .8 ? '#067647' : a >= .5 ? '#b54708' : '#b42318'}">${Math.round(a * 100)} %</b> correct`}</div></div>`; }).join('')}</div>`;
   V().querySelectorAll('.li input').forEach(i => i.addEventListener('change', e => { const id = e.target.closest('[data-s]').dataset.s, v = e.target.value.trim() || 'No name'; saveClassOf(id, c => { const st = c.students.find(x => x.id === id); if (st) st.name = v; }); }));
   V().querySelectorAll('.li .x').forEach(b => b.addEventListener('click', e => { const id = e.target.closest('[data-s]').dataset.s; armDelete(e.target, async () => { await saveClassOf(id, c => { c.students = c.students.filter(x => x.id !== id); }); delete state.stats[id]; persist(); if (state.students.length) viewList(); else go('classes'); }); }));
+  $('lAdd').addEventListener('click', openAdd);
   $('lReset').addEventListener('click', () => { state.stats = {}; persist(); viewList(); toast('Statistics reset.'); });
   $('lHard').addEventListener('click', () => {
     const hard = state.students.filter(s => { const a = acc(s); return a === null || a < .8; }).map(s => s.id);
@@ -965,6 +987,39 @@ function viewList() {
     view = 'cards'; renderHead(); startCards(hard);
   });
 }
+
+// ---- add a student that is not in the PDF ----
+let addPhotoData = null;
+function addPreview() { $('addPrev').innerHTML = addPhotoData ? `<img src="${addPhotoData}" alt="">` : `<div class="initials">${esc(initials($('addName').value || '?'))}</div>`; }
+function openAdd() {
+  const sel = classes.filter(c => selected.has(c.id));
+  if (!sel.length) return toast('Please choose a class first.');
+  addPhotoData = null; $('addName').value = '';
+  $('addCls').innerHTML = sel.map(c => `<option value="${c.id}">${esc(classLabel(c))}${c.meta && c.meta.fach ? ' · ' + esc(c.meta.fach) : ''}</option>`).join('');
+  $('addClsWrap').style.display = sel.length > 1 ? '' : 'none';
+  addPreview(); $('dlgAdd').classList.add('show'); setTimeout(() => $('addName').focus(), 30);
+}
+$('addName').addEventListener('input', addPreview);
+$('addName').addEventListener('keydown', e => { if (e.key === 'Enter') $('addOk').click(); });
+$('addPhoto').addEventListener('click', () => $('fileAddImg').click());
+$('addNoPhoto').addEventListener('click', () => { addPhotoData = null; addPreview(); });
+$('fileAddImg').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = ''; if (!f) return;
+  try {
+    const img = new Image(); img.src = URL.createObjectURL(f); await img.decode();
+    const c = document.createElement('canvas'), k = Math.min(1, 320 / img.height); c.width = Math.round(img.width * k); c.height = Math.round(img.height * k);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); addPhotoData = c.toDataURL('image/jpeg', .86); addPreview();
+  } catch (er) { toast('This image could not be read.'); }
+});
+$('addCancel').addEventListener('click', () => $('dlgAdd').classList.remove('show'));
+$('addOk').addEventListener('click', async () => {
+  const name = $('addName').value.trim(); if (!name) return $('addName').focus();
+  const c = classes.find(x => x.id === $('addCls').value); if (!c) return;
+  c.students = c.students || []; c.students.push({ id: nid('s'), name, photo: addPhotoData }); c.updated = Date.now();
+  try { await DB.put('classes', c); } catch (er) { toast('Saving failed.'); }
+  $('dlgAdd').classList.remove('show'); rebuild(); renderHead(); viewList();
+  toast(`${name} added to class ${classLabel(c)}.`);
+});
 
 // ---- class bar (always visible) ----
 function renderBar() {

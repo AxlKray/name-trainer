@@ -17,7 +17,7 @@ cards and lets you practise in four ways.
 - **Typing**: type the first name; case, accents and one typo are forgiven.
   A hint reveals one letter at a time.
 - **Students**: list with the share of correct answers per student, correct
-  names, practise only the hard ones.
+  names, add a student who is not in the PDF (with a photo from the camera or a file), practise only the hard ones.
 
 ## More
 
