@@ -12,6 +12,7 @@ cards and lets you practise in four ways.
 
 - **Flashcards**: see the photo, flip, mark "got it" or "again".
 - **Quiz**: photo → pick the right name out of four (or name → photo).
+  The wrong answers are always girls for a girl and boys for a boy (guessed from the first name).
   Every student has to be answered correctly twice.
 - **Memory**: match photo and name pairs (4–15 pairs), with moves and time.
 - **Typing**: type the first name; case, accents and one typo are forgiven.
