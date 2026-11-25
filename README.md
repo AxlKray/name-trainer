@@ -42,7 +42,12 @@ is included in the folder `pdfjs`, so the app needs no external server.
 
 Upload `index.html` **together with the folder `pdfjs`** to any web server, or
 enable **GitHub Pages** for this repository (Settings → Pages → branch `main`, folder `/`).
-If both tools run on the same website, they share the same class list library.
+If [Seat Planner](https://github.com/axlkray/seat-planner) runs on the same website, both tools see the same class list library (optional – each app works on its own).
+
+## iPhone / iPad app
+
+The folder [`ios/`](ios/) contains a native SwiftUI version (iOS 17+) with the same modes.
+See [`ios/README.md`](ios/README.md) for how to open it in Xcode.
 
 ---
 

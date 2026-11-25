@@ -108,6 +108,9 @@
 .done-box p{color:var(--muted);margin:0 0 18px}
 .done-box .row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 /* list */
+.lst-h{display:flex;justify-content:space-between;width:min(1000px,100%);margin:14px 0 6px;font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.02em}
+.accbar{height:4px;border-radius:2px;background:rgba(0,0,0,.08);overflow:hidden;margin-top:4px}.accbar i{display:block;height:100%;border-radius:2px}
+.lst-bar{width:min(1000px,100%);margin:0 0 10px}.lst-bar .accbar{height:6px;border-radius:3px;margin:0}
 .lst{display:grid;gap:10px;width:min(1000px,100%);grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
 .li{background:#fff;border:1px solid var(--line);border-radius:10px;overflow:hidden;position:relative}
 .li img,.li .initials{width:100%;height:150px;object-fit:cover;object-position:50% 20%;display:block}
@@ -531,12 +534,17 @@ const DB = (() => {
   return api;
 })();
 const classLabel = c => (c.meta && c.meta.klasse) || 'Unnamed';
+// share of correct answers (null = not practised yet), for a student or a whole class
+function accOf(ids) { let r = 0, n = 0; for (const id of ids) { const st = state.stats[id]; if (st) { r += st.r; n += st.r + st.w; } } return n ? r / n : null; }
+const accColor = a => a >= .8 ? '#067647' : a >= .5 ? '#b54708' : '#b42318';
+const accHTML = a => `<b style="color:${accColor(a)}">${Math.round(a * 100)} %</b>`;
+const accBar = a => `<div class="accbar">${a === null ? '' : `<i style="width:${Math.max(4, a * 100)}%;background:${accColor(a)}"></i>`}</div>`;   // null = empty grey bar
 function classTileHTML(c, o = {}) {
   const m = c.meta || {}, ph = (c.students || []).filter(s => s.photo).slice(0, 4);
   return `<div class="ktile${o.active ? ' active' : ''}${o.selected ? ' sel' : ''}" data-k="${c.id}" title="${esc([m.klasse && 'Class ' + m.klasse, m.fach, m.lehrer, m.datum].filter(Boolean).join(' · '))}">` +
     (o.check ? `<span class="kchk">${o.selected ? '✓' : ''}</span>` : '') +
     `<div class="kmos">${ph.map(s => `<img src="${s.photo}" alt="">`).join('') || '<span>👥</span>'}</div>` +
-    `<div class="ktxt"><b>${esc(classLabel(c))}${m.fach ? ' · ' + esc(m.fach) : ''}</b><small>${(c.students || []).length} students${m.datum ? ' · ' + esc(m.datum) : ''}</small></div>` +
+    `<div class="ktxt"><b>${esc(classLabel(c))}${m.fach ? ' · ' + esc(m.fach) : ''}</b><small>${(c.students || []).length} students · ${(a => a === null ? '<b>0 %</b>' : accHTML(a))(accOf((c.students || []).map(x => x.id)))}${m.datum ? ' · ' + esc(m.datum) : ''}</small>${accBar(accOf((c.students || []).map(x => x.id)))}</div>` +
     `<button class="kdel" title="Delete class">×</button></div>`;
 }
 // first click arms, second click (within 3 s) deletes
@@ -632,7 +640,7 @@ function joinLines(items) {
     return { text: s.replace(/\s+/g, ' ').trim(), base: l.base, h: Math.max(...l.items.map(t => t.h)) };
   }).filter(l => l.text);
 }
-// header info (Kurs / Klasse / Fach / Lehrperson) from the first page
+// header info from the first page – German school PDFs (Kurs / Klasse / Fach / Lehrperson / Zimmer) and English (Course / Class / Subject / Teacher / Room)
 function headerSegments(texts) {
   const lines = [];
   for (const t of [...texts].sort((a, b) => a.base - b.base || a.x - b.x)) {
@@ -665,12 +673,12 @@ function detectMeta(texts) {
   const m = {}, cut = v => v.split(/\s{2,}|\s[·|•]\s/)[0].trim();
   for (const s of headerSegments(texts)) {
     let r;
-    if (!m.fach && (r = s.match(/^Kurs\s*:\s*(.+?)\s*\(([^)]+)\)/i))) { m.fach = r[1].trim(); m.klasse = r[2].trim(); continue; }
-    if (!m.fach && (r = s.match(/^Kurs\s*:\s*(.+)/i))) { m.fach = cut(r[1]); continue; }
-    if (!m.fach && (r = s.match(/^Fach\s*:\s*(.+)/i))) { m.fach = cut(r[1]); continue; }
-    if (!m.klasse && (r = s.match(/^Klasse\s*:?\s*(\d{1,2}\s?[a-zA-Z]{0,3})\b/i))) { m.klasse = r[1].replace(/\s/g, ''); continue; }
-    if (!m.lehrer && (r = s.match(/^(?:Klassen)?(?:Lehrperson|Lehrkraft|Lehrer(?:in|\/in)?)\s*:\s*(.+)/i))) { m.lehrer = shortName(cut(r[1])); continue; }
-    if (!m.raum && (r = s.match(/^(?:Zimmer|Raum)\s*:\s*(.+)/i))) { m.raum = cut(r[1]); continue; }
+    if (!m.fach && (r = s.match(/^(?:Kurs|Course)\s*:\s*(.+?)\s*\(([^)]+)\)/i))) { m.fach = r[1].trim(); m.klasse = r[2].trim(); continue; }
+    if (!m.fach && (r = s.match(/^(?:Kurs|Course)\s*:\s*(.+)/i))) { m.fach = cut(r[1]); continue; }
+    if (!m.fach && (r = s.match(/^(?:Fach|Subject)\s*:\s*(.+)/i))) { m.fach = cut(r[1]); continue; }
+    if (!m.klasse && (r = s.match(/^(?:Klasse|Class)\s*:?\s*(\d{1,2}\s?[a-zA-Z]{0,3})\b/i))) { m.klasse = r[1].replace(/\s/g, ''); continue; }
+    if (!m.lehrer && (r = s.match(/^(?:Klassen)?(?:Lehrperson|Lehrkraft|Lehrer(?:in|\/in)?|Teacher)\s*:\s*(.+)/i))) { m.lehrer = shortName(cut(r[1])); continue; }
+    if (!m.raum && (r = s.match(/^(?:Zimmer|Raum|Room)\s*:\s*(.+)/i))) { m.raum = cut(r[1]); continue; }
   }
   return m;
 }
@@ -913,8 +921,23 @@ function welcome() {
 
 // ---- Lernkarten ----
 let fc = {};
+// Known well enough to skip: 95 % or more right, after at least 3 answers (same rule as the iOS app).
+function wellKnown(id) { const st = state.stats[id]; return !!st && st.r + st.w >= 3 && st.r / (st.r + st.w) >= 0.95; }
+// How much a student needs practice: never asked = 1, always wrong ≈ 1.15, always right ≈ 0.15.
+function practiceWeight(id) { const st = state.stats[id]; return st && st.r + st.w ? 1 - st.r / (st.r + st.w) + 0.15 : 1; }
+// A whole round (no ids): names you know well are skipped, the rest in a weighted random order –
+// the less you know a name, the earlier it tends to come. A chosen list ("again", "hard ones") is just shuffled.
 function startCards(ids) {
-  fc = { queue: shuffle(ids || state.students.map(s => s.id)), again: [], known: 0 };
+  let queue, skipped = 0;
+  if (ids) queue = shuffle(ids);
+  else {
+    const all = state.students.map(s => s.id), todo = all.filter(id => !wellKnown(id));
+    const pool = todo.length ? todo : all;               // you know everyone: show them all
+    skipped = all.length - pool.length;
+    // weighted shuffle (Efraimidis–Spirakis): key = random^(1/weight), biggest first
+    queue = pool.map(id => [id, Math.pow(Math.random() || 1e-4, 1 / practiceWeight(id))]).sort((a, b) => b[1] - a[1]).map(x => x[0]);
+  }
+  fc = { queue, again: [], known: 0, skipped };
   fc.total = fc.queue.length; nextCard();
 }
 function nextCard() {
@@ -926,6 +949,7 @@ function nextCard() {
   fc.cur = byId(fc.queue[0]);
   const s = fc.cur, full = s.name !== target(s) ? `<div class="subname">${esc(s.name)}</div>` : '';
   V().innerHTML = progress(fc.total - fc.queue.length, fc.total) +
+    (fc.skipped ? `<div class="keys">${fc.skipped} ${fc.skipped === 1 ? 'name you know well is' : 'names you know well are'} skipped.</div>` : '') +
     `<div class="flip" id="fl"><div class="inner"><div class="face front">${photoHTML(s)}<div class="hint">Tap to flip</div></div>
      <div class="face back">${photoHTML(s)}<div class="bigname">${esc(target(s))}</div>${full}</div></div></div>
      <div class="ans"><button class="btn-no" id="bNo">✗ Again</button><button class="btn-yes" id="bYes">✓ Got it</button></div>
@@ -956,14 +980,15 @@ function startQuiz(dir) {
   qz.total = ids.length * REPEAT; nextQuiz();
 }
 // ---- girl / boy, guessed from the first name (so the quiz doesn't mix them) ----
-const NAMES_F = new Set(('mia emma lena lea léa anna sofia sophia sophie emilia lina laura lara sara sarah julia nina alina elena zoe zoé chiara mila ella elin nora lia leonie hannah hanna lisa jana selina livia amelie amélie jasmin yasmin noemi noémie nadia olivia ava luana malia aurora alessia giulia elisa valentina ladina seraina leandra annina celine céline michelle vanessa melanie larissa tamara angela amira aylin elif zeynep ayla ruolin yixian lucy alice clara klara marie maria marlene charlotte frieda ida greta paula luisa louisa lotta lou romy ronja malea maya maja nela nele elina enya liv svenja jule juliana carla carlotta martina monika katharina katja nicole sandra jessica jennifer lorena lucia lucía luzia fiona flurina gianna giada anja mara selin melina alea aline eline elisabeth amina fatima ana ines inés iris irina isabel isabella isabelle jade lilly lilli lily liana lynn mira naomi natalie noa noelia rebecca rosa sienna stella tara tessa vera victoria viktoria yara yuna zara zoey ilenia jael joelle joëlle').split(' '));
-const NAMES_M = new Set(('noah liam luca leon elias ben finn jonas levin lionel nico nicolas niklas timo tim david samuel julian jan matteo dario yannick gian nils lukas lucas leo louis luis felix max maximilian paul elia mattia gabriel raphael rafael aaron jonathan simon fabian florian marco andrin joel joël nevio lian mael maël kilian moritz emil anton oskar oscar henry theo théo vincent alexander alexandru stefan stephan daniel michael thomas julius kay ali omar yusuf mohammed muhammad kevin lars sven tobias fabio enea diego mateo adrian benjamin nathan ethan lenny jakob jacob jonah josua joshua levi lio lino luan mats mattis milan nael nino nevin noel noël arian aurel bastian cedric cédric constantin dominik elian emilian erik eric gion janis jannis jason jayden johannes jorin kian laurin lean lenn leandro leonardo linus loris lorenzo luciano luka malik marlon martin matthias micha nathanael nicola noam oliver pascal patrick philipp pietro remo ricardo riccardo robert sandro sebastian silvan severin tiago timon valentin yanis yannik zian andrea mika ilja sasha jona').split(' '));
+const NAMES_F = new Set(('mia emma lena lea léa anna sofia sophia sophie emilia lina laura lara sara sarah julia nina alina elena zoe zoé chiara mila ella elin nora lia leonie hannah hanna lisa jana selina livia amelie amélie jasmin yasmin noemi noémie nadia olivia ava luana malia aurora alessia giulia elisa valentina ladina seraina leandra annina celine céline michelle vanessa melanie larissa tamara angela amira aylin elif zeynep ayla ruolin yixian lucy alice clara klara marie maria marlene charlotte frieda ida greta paula luisa louisa lotta lou romy ronja malea maya maja nela nele elina enya liv svenja jule juliana carla carlotta martina monika katharina katja nicole sandra jessica jennifer lorena lucia lucía luzia fiona flurina gianna giada anja mara selin melina alea aline eline elisabeth amina fatima ana ines inés iris irina isabel isabella isabelle jade lilly lilli lily liana lynn mira naomi natalie noa noelia rebecca rosa sienna stella tara tessa vera victoria viktoria yara yuna zara zoey ilenia jael joelle joëlle claire chloé chloe manon camille léonie eva eve ève elea éléa emily emilie émilie nathalie alicia aurélie aurelie océane oceane maëlle maelle louise juliette margaux margot pauline lucie mathilde elodie élodie léna jeanne agathe anouk inès agnès agnes adèle adele apolline capucine clémence clemence constance hélène helene héloïse heloise justine laure laurine louna maëlys maelys marine mélanie morgane romane salomé salome solène solene zélie zelie anaïs anais lison elise élise rose cécile cecile estelle gaëlle mylène axelle aude anne-sophie colette nadège brigitte rahel sina svea smilla tabea thea tea téa mona linda nadja nadine janine jasmine leila layla lejla aisha aya amra arta ena ema era dua rina vesa blerta albina besa dafina hana merve ecrin defne ebru esra nisa irem beatriz mariana inês leonor matilde carolina rita nour noor maryam mariam salma sofija milica sanja katarina ivana jovana tijana priya liya zoë flavia fabienne corinne sabrina simona seline shirin soraya lavinia mirjam miriam myriam ruth esther judith rachel sarina serena alessandra francesca federica giorgia beatrice ginevra vittoria eleonora matilda marta juna ylvi malin linnea frida annika alva wilma hedda kiana ela asya zehra meryem selma amila ajla emina edina naida alma carmen dolores mercedes pilar consuelo yuki yui yuka yuko yumi yumiko yoko yoshiko keiko kyoko kaori kana kanna kaho kaede kasumi haruka haruna hanako hina hinako hikari hiroko mai maiko mao mayu mei miku miki misaki mio miyu momoka nanami nao naoko natsuki nozomi rin riko risa ryoko saki sakura sayaka saya shiori sora tomoko yuria aoi akari ayaka ayano chihiro emi eri erika fumiko izumi kumiko mariko megumi michiko midori noriko reiko sachiko satomi shizuka tomomi wakana violet ivy hazel willow florence audrey edith maeve niamh siobhan aoife ciara saoirse grace isla poppy ruby evie harper scarlett abigail megan holly molly daisy phoebe imogen eleanor amelia freya ingrid astrid sigrid saga tuva elsa ebba signe anastasia daria darja polina ksenia xenia veronika natascha natasha tatjana olga ekaterina jekaterina mascha masha sonja ljuba jelena marija dunja ivona petra lucija nika lana iva maša zoja ada alisa arina kira lada uliana varvara vasilisa yana zlata milena mirjana snežana snezana aleksandra emilija kristina ljubica teodora una vesna zorana parisa sahar nazanin darya setareh roya leyla mina nilufar laleh fatemeh zahra zainab zeinab hiba rania dalia rim malak lujain amal hala ghazal hanan aaliyah asma amara ayana chiamaka efua imani nia zuri adaeze ama abena kemi ife folake ngozi chidinma makeda selam hiwot meron saba helen betelhem senait mahlet eden winta yohana luwam anjali divya kavya ananya aditi diya ishita meera sharmila thanya keerthana kavitha abirami sangeetha shruti sneha aishwarya nithya pooja tharani harini janani sahana vaishnavi swetha thushyanthy ling xin jing yan jiayi yuxin yiting seoyeon jiyoon haeun soyeon minji linh lan thu trang ngoc huong thao hoa valeria ximena camila daniela gabriela isabela catarina joana margarida raquel sílvia silvia teresa esperanza guadalupe rocío rocio nerea ainhoa alba irene lidia nuria montse eleni katerina dimitra georgia ioanna despina vasiliki christina athena kalliope penelope chrysa tamar shira yael talia hila avital rivka chana naama liora zsofia zsófia réka reka eszter dorka kinga zuzanna agnieszka katarzyna małgorzata ola kasia barbora tereza klára eliška eliska adéla kristýna azra eylül eylul duru ceren ilayda melis yağmur yagmur sude buse gizem beyza dilara gamze melek sevgi rabia tuana dilan rojda berfin zilan helin ronahi beritan arbnora blerina diellza dorentina edona elira erza fjolla gentiana jehona kaltrina lirije lumbardha njomza shqipe valbona vjosa albulena drita ariana leonora ardita elona').split(' '));
+const NAMES_M = new Set(('noah liam luca leon elias ben finn jonas levin lionel nico nicolas niklas timo tim david samuel julian jan matteo dario yannick gian nils lukas lucas leo louis luis felix max maximilian paul elia mattia gabriel raphael rafael aaron jonathan simon fabian florian marco andrin joel joël nevio lian mael maël kilian moritz emil anton oskar oscar henry theo théo vincent alexander alexandru stefan stephan daniel michael thomas julius kay ali omar yusuf mohammed muhammad kevin lars sven tobias fabio enea diego mateo adrian benjamin nathan ethan lenny jakob jacob jonah josua joshua levi lio lino luan mats mattis milan nael nino nevin noel noël arian aurel bastian cedric cédric constantin dominik elian emilian erik eric gion janis jannis jason jayden johannes jorin kian laurin lean lenn leandro leonardo linus loris lorenzo luciano luka malik marlon martin matthias micha nathanael nicola noam oliver pascal patrick philipp pietro remo ricardo riccardo robert sandro sebastian silvan severin tiago timon valentin yanis yannik zian andrea mika ilja sasha jona mathis mathéo matheo nolan arthur hugo jules gabin léo raphaël enzo timéo timeo maxime thibault thibaut antoine baptiste clément clement quentin alexandre adam sacha noé noe rémi remi rémy jérémie jeremie jérémy jeremy aurélien aurelien julien damien adrien bastien sébastien sebastien fabien lucien maximilien thierry philippe pierre jean jacques étienne etienne guillaume grégoire gregoire hervé herve mathieu matthieu olivier romain sylvain yves loïc loic yann gaël gael titouan tristan corentin benoît benoit françois francois frédéric frederic georges gilles aurelio giacomo tommaso francesco alessandro filippo edoardo federico giovanni giuseppe nicolò niccolò samuele gabriele daniele emanuele michele simone davide ennio livio flavio cyrill cyril dominic marc marcel mario mauro manuel nik niko raffael ramon reto roman ruben rubén ryan sami samir tom ivan ivo jari jaron jaden franz fynn hannes henri lasse leif lennard lennart mads malte ole piet till vince aron arda emir emre efe eren kerem mert berat burak mehmet mustafa ahmet ahmed ibrahim ismail hamza adem amar armin edin emin kenan tarik haris harun dino marko nikola nemanja filip lazar petar aleksandar milos dusan arbnor arber besart blerim dren drin egzon enis ilir leart liridon rinor valon vigan ylli alban altin joão joao rodrigo gonçalo miguel pedro santiago kiran arjun aryan karthik karim youssef yassin yasin amir hassan hussein mohamed mehdi rayan ilyas ilias elijah kenta shota shouta sota souta yuta yuuta kota kouta ryota ryouta keita kaito haruto hiroto yuto sosuke sousuke daiki daichi takumi takuya takeshi takashi hiroshi kenji kenichi kazuki kazuya kei ken koji riku ren sho shun shunsuke soma taiga taichi taro tatsuya tomoya toshiki tsubasa yamato yoshiki yusuke yuuki yuma yuya akira akihiro daisuke haruki hayato isamu itsuki jun kakeru kosuke makoto masaki minato naoki naoto ryo ryuji ryusei satoshi seiji shin shinji shuhei tetsuya yoichi yuji jascha sascha mischa nikita kosta andrija miron mirko boris bogdan igor oleg dmitri dimitri sergei sergej alexei alexej maxim maksim artem artur mark kirill vladimir vadim timur ruslan pavel pawel piotr jakub kacper szymon wojciech mateusz bartosz krzysztof tomasz michał michal ondřej jiří tomáš vojtěch matěj zoltán bence levente máté ádám dávid balázs gergő ognjen vuk uroš matej tin jakov ante mihael arash dariush cyrus kourosh reza babak parsa navid omid farid behnam hamid hossein mohammad ahmad mahmoud khaled khalil tarek walid yousef ziad bilal anas zakaria zakariya idris younes amine nabil rami fadi majd jad abel dawit yonas robel mussie filmon yohannes kidus natnael amanuel bereket tesfay kofi kwame kwabena chidi emeka obinna chinedu tunde femi olu ayo musa moussa mamadou ousmane ibrahima abdou amadou cheikh boubacar rahul rohan vikram aditya aarav vivaan ishaan krishna surya aravind prakash suresh ganesh harish vignesh praveen thanush sanjay ajay vijay nikhil siddharth dhruv varun akash ashwin sharan keshav mithun nithin pranav sabarish thushan kajan mathusan nirujan piranavan sajeevan thanushan kirushan kavin wei hao jie ming haoran yuhang zihao junho minjun seojun jihoon hyun minh duc quang tuan huy long nam bao alejandro álvaro alvaro sergio pablo javier jorge carlos juan antonio francisco josé jose andrés andres matías matias nicolás sebastián emiliano joaquín joaquin tomás tomas bruno duarte afonso rui nuno vasco william james george harry charlie jack freddie alfie archie theodore edward mason logan owen rhys dylan connor sean ciarán ciaran oisín oisin cian axel ebbe isak magnus olof sigurd vidar giorgos nikos dimitris konstantinos kostas yannis ioannis christos panagiotis vasilis alexandros stavros spyros achilleas yonatan itai ido omer eitan ariel yosef uri amit nadav gil yair eliyahu avi ilan aras baran berk can doruk ege eymen kaan kuzey onur ozan poyraz ömer serkan tuna yiğit yigit alp batuhan furkan hakan kemal murat oguz oğuz sinan tolga ugur uğur volkan zeki rojhat azad agon ardian ardit arlind dardan dion diar driton endrit erion flamur fatlum gent granit jeton kujtim labinot lirim lorik lum mergim qendrim rron shkelzen uran visar yll zgjim').split(' '));
 function guessGender(first) {
   const f = (first || '').trim().split(/[\s-]+/)[0].toLowerCase();
   if (!f) return '';
   if (NAMES_M.has(f)) return 'm';
   if (NAMES_F.has(f)) return 'f';
-  if (/(a|ia|ine|ina|ie|ette|elle|ee)$/.test(f)) return 'f';
+  if (/(ko|mi)$/.test(f)) return 'f';   // Japanese girls' names (Yuko, Emi); boys like Kenta, Remi are in NAMES_M
+  if (/(a|ia|ine|ina|ie|ette|elle|ee|aire|ise|anne|enne|ille)$/.test(f)) return 'f';
   return 'm';  // most other first names in Swiss classes are boys' names
 }
 const genderOf = s => guessGender(splitName(s.name).first);
@@ -1026,7 +1051,7 @@ function startMemory(pairs) {
   mm.timer = setInterval(memInfo, 1000); memInfo();
 }
 const fmtT = ms => { const s = Math.floor(ms / 1000); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
-function memInfo() { const el = $('mmInfo'); if (el) el.textContent = `${mm.found}/${mm.pairs} pairs · ${mm.moves} moves · ${fmtT(mm.start ? Date.now() - mm.start : 0)}`; }
+function memInfo() { const el = $('mmInfo'); if (el) el.textContent = `${mm.found}/${mm.pairs} pairs · ${mm.moves} ${mm.moves === 1 ? 'move' : 'moves'} · ${fmtT(mm.start ? Date.now() - mm.start : 0)}`; }
 function flipMem(i, el) {
   const c = mm.cards[i]; if (mm.lock || c.open || c.done) return;
   if (!mm.start) mm.start = Date.now();
@@ -1035,11 +1060,11 @@ function flipMem(i, el) {
   mm.moves++; const [a, b] = mm.sel; mm.sel = [];
   const els = [a, b].map(x => $('mem').querySelector(`[data-c="${x.i}"]`));
   if (a.id === b.id) {
-    a.done = b.done = true; mm.found++; stat(a.id, true);
+    a.done = b.done = true; mm.found++;   // Memory does not count toward the % (it could only go up)
     els.forEach(e => e.classList.add('done')); memInfo();
     if (mm.found === mm.pairs) {
       clearInterval(mm.timer); const t = fmtT(Date.now() - mm.start);
-      go._t = setTimeout(() => doneBox('All pairs found! 🎉', `${mm.moves} moves in ${t}.`, [['Again', () => startMemory(mm.pairs)], ['Practise typing', () => go('write')]]), 700);
+      go._t = setTimeout(() => doneBox('All pairs found! 🎉', `${mm.moves} ${mm.moves === 1 ? 'move' : 'moves'} in ${t}.`, [['Again', () => startMemory(mm.pairs)], ['Practise typing', () => go('write')]]), 700);
     }
   } else {
     mm.lock = true; memInfo();
@@ -1049,7 +1074,9 @@ function flipMem(i, el) {
 
 // ---- Schreiben ----
 let wr = {};
-const norm = s => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z]/g, '');
+// ø, æ, ß, ł … have no accent to strip: map them to what people type without the key
+const PLAIN = { 'ø': 'o', 'æ': 'ae', 'œ': 'oe', 'ß': 'ss', 'ł': 'l', 'đ': 'd', 'ð': 'd', 'þ': 'th', 'ı': 'i', 'ħ': 'h', 'ŋ': 'n' };
+const norm = s => s.toLowerCase().replace(/[øæœßłđðþıħŋ]/g, c => PLAIN[c]).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z]/g, '');
 function lev(a, b) { const d = Array.from({ length: a.length + 1 }, (_, i) => [i]); for (let j = 1; j <= b.length; j++) d[0][j] = j; for (let i = 1; i <= a.length; i++) for (let j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); return d[a.length][b.length]; }
 function startWrite() { const ids = state.students.map(s => s.id); wr = { queue: shuffle(ids), done: 0, first: 0, wrongIds: new Set(), need: Object.fromEntries(ids.map(id => [id, REPEAT])), n: ids.length }; wr.total = ids.length * REPEAT; nextWrite(); }
 function nextWrite() {
@@ -1100,12 +1127,15 @@ function checkWrite() {
   else { wr.wrongIds.add(t.id); wr.queue.splice(Math.min(3, wr.queue.length), 0, t.id); fb.className = 'fb bad'; fb.textContent = `Correct answer: ${want}`; }
 }
 
-// ---- Klasse (Liste + Statistik) ----
+// ---- Students tab (list + statistics) ----
 function viewList() {
-  const acc = s => { const st = state.stats[s.id]; return st && st.r + st.w ? st.r / (st.r + st.w) : null; };
-  const list = [...state.students].sort((a, b) => sortKey(a.name).localeCompare(sortKey(b.name), 'de'));
-  V().innerHTML = `<div class="lst-top"><span style="color:var(--muted);font-size:13px">Correct names here. Percentage = share of correct answers.</span><span><button class="primary" id="lAdd">+ Add student</button> <button id="lHard">Practise hard ones</button> <button id="lReset">Reset statistics</button></span></div>
-  <div class="lst">${list.map(s => { const a = acc(s); return `<div class="li" data-s="${s.id}"><button class="x" title="Remove">×</button>${photoHTML(s)}<input value="${esc(s.name)}"><div class="acc">${a === null ? 'not practised yet' : `<b style="color:${a >= .8 ? '#067647' : a >= .5 ? '#b54708' : '#b42318'}">${Math.round(a * 100)} %</b> correct`}</div></div>`; }).join('')}</div>`;
+  const acc = s => accOf([s.id]);
+  const sel = classes.filter(c => selected.has(c.id)).sort((a, b) => (a.created || 0) - (b.created || 0));
+  const li = s => { const a = acc(s); return `<div class="li" data-s="${s.id}"><button class="x" title="Remove">×</button>${photoHTML(s)}<input value="${esc(s.name)}"><div class="acc">${a === null ? 'not practised yet' : accHTML(a) + ' correct'}</div></div>`; };
+  const group = c => { const list = state.students.filter(s => s.classId === c.id).sort((a, b) => sortKey(a.name).localeCompare(sortKey(b.name), 'de')), a = accOf(list.map(s => s.id));
+    return list.length ? `<div class="lst-h"><span>${esc(classLabel(c))}</span><span>${a === null ? '0 % · not practised yet' : accHTML(a) + ' correct'}</span></div><div class="lst-bar">${accBar(a)}</div><div class="lst">${list.map(li).join('')}</div>` : ''; };
+  V().innerHTML = `<div class="lst-top"><span style="color:var(--muted);font-size:13px">Correct names here. Percentage = share of correct answers in Cards, Quiz and Typing.</span><span><button class="primary" id="lAdd">+ Add student</button> <button id="lHard">Practise hard ones</button> <button id="lReset">Reset statistics</button></span></div>
+  ${sel.map(group).join('')}`;
   V().querySelectorAll('.li input').forEach(i => i.addEventListener('change', e => { const id = e.target.closest('[data-s]').dataset.s, v = e.target.value.trim() || 'No name'; saveClassOf(id, c => { const st = c.students.find(x => x.id === id); if (st) st.name = v; }); }));
   V().querySelectorAll('.li .x').forEach(b => b.addEventListener('click', e => { const id = e.target.closest('[data-s]').dataset.s; armDelete(e.target, async () => { await saveClassOf(id, c => { c.students = c.students.filter(x => x.id !== id); }); delete state.stats[id]; persist(); if (state.students.length) viewList(); else go('classes'); }); }));
   $('lAdd').addEventListener('click', openAdd);
@@ -1169,7 +1199,7 @@ $('ktiles').addEventListener('click', e => {
   go(view);
 });
 
-// ---- Klassen (Auswahl) ----
+// ---- Classes (selection) ----
 function viewClasses() {
   V().innerHTML = `<div class="welcome"><h2>Choose a class</h2><p>Tap one or more classes in the bar above – then off you go.</p></div>`;
 }
